@@ -6,10 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="xunit" Version="2.5.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageReference Include="coverlet.collector" Version="10.1.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Quizzler.Core\Quizzler.Core.csproj" />
     <ProjectReference Include="..\..\src\Quizzler.CodeRunner\Quizzler.CodeRunner.csproj" />
+    <ProjectReference Include="..\..\src\Quizzler.Data\Quizzler.Data.csproj" />
   </ItemGroup>
 
   <!-- Content validation tests read the real question bank from the repo. -->

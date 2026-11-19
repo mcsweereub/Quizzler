@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>quizzler</AssemblyName>
+    <RootNamespace>Quizzler.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console.Cli" Version="0.57.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quizzler.Core\Quizzler.Core.csproj" />
+    <ProjectReference Include="..\Quizzler.Data\Quizzler.Data.csproj" />
+    <ProjectReference Include="..\Quizzler.CodeRunner\Quizzler.CodeRunner.csproj" />
+  </ItemGroup>
+
+</Project>
