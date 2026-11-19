@@ -41,7 +41,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         if (plan.IsEmpty)
         {
             var summary = service.GetDueSummary();
-            var next = summary.NextDueAt is { } at ? StatsCommand.Humanize(at - service.Now) : "when you add more questions";
+            var next = summary.NextDueAt is { } at ? TimeText.Until(at - service.Now) : "when you add more questions";
             AnsiConsole.MarkupLine($"[green]All caught up![/] Next review {next}.");
             return 0;
         }
@@ -69,7 +69,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
 
         var after = service.GetDueSummary();
         if (after.NextDueAt is { } nextDue)
-            AnsiConsole.MarkupLine($"Next review {StatsCommand.Humanize(nextDue - service.Now)}.");
+            AnsiConsole.MarkupLine($"Next review {TimeText.Until(nextDue - service.Now)}.");
         return 0;
     }
 
@@ -174,7 +174,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         }
 
         var updated = service.RecordAnswer(item, outcome, response, stopwatch.Elapsed);
-        var nextIn = StatsCommand.Humanize(updated.DueAt - service.Now);
+        var nextIn = TimeText.Until(updated.DueAt - service.Now);
         var nextMode = updated.Stage == CardStage.Typed ? "typed" : "multiple choice";
         AnsiConsole.MarkupLine($"[grey]Next time: {nextMode}, {nextIn}.[/]");
 

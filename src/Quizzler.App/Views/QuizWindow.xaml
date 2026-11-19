@@ -1,0 +1,289 @@
+<Window x:Class="Quizzler.App.Views.QuizWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:Quizzler.App.Views"
+        xmlns:vm="clr-namespace:Quizzler.App.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:QuizViewModel}"
+        Title="Quizzler"
+        Icon="pack://application:,,,/Quizzler.App;component/Assets/quizzler.ico"
+        Width="780" Height="780" MinWidth="520" MinHeight="460"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <Window.Resources>
+        <!-- Multiple-choice option: card-like button that turns green/red after answering. -->
+        <Style x:Key="OptionButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <!-- Custom template, so the Fluent theme's text colour isn't inherited: set it explicitly. -->
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Padding" Value="14,11" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                        <Condition Binding="{Binding State}" Value="Normal" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                </MultiDataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Correct">
+                    <Setter Property="BorderBrush" Value="{DynamicResource CorrectBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource CorrectSoftBrush}" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Wrong">
+                    <Setter Property="BorderBrush" Value="{DynamicResource WrongBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource WrongSoftBrush}" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Dimmed">
+                    <Setter Property="Opacity" Value="0.5" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Result panel colours follow the answer state. -->
+        <Style x:Key="FeedbackPanel" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="1.5" />
+            <Setter Property="Padding" Value="18,14" />
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Feedback.State}" Value="Correct">
+                    <Setter Property="Background" Value="{DynamicResource CorrectSoftBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource CorrectBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Feedback.State}" Value="Incorrect">
+                    <Setter Property="Background" Value="{DynamicResource WrongSoftBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource WrongBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FeedbackTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Feedback.State}" Value="Correct">
+                    <Setter Property="Foreground" Value="{DynamicResource CorrectBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Feedback.State}" Value="Incorrect">
+                    <Setter Property="Foreground" Value="{DynamicResource WrongBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="Root" Focusable="True" FocusVisualStyle="{x:Null}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ Header: position + progress ============ -->
+        <Border Grid.Row="0" Padding="28,16,28,12" BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="0,0,0,1"
+                Visibility="{Binding ShowQuestion, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding SessionDescription}" Foreground="{DynamicResource MutedTextBrush}" />
+                    <TextBlock Text="{Binding Question.PositionText}" FontWeight="SemiBold" />
+                </DockPanel>
+                <ProgressBar Value="{Binding Question.Progress, Mode=OneWay}" Maximum="1" Height="4" Margin="0,8,0,0"
+                             Foreground="{DynamicResource AccentBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ============ Page ============ -->
+        <ScrollViewer x:Name="PageScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="28,18,28,24">
+
+                <!-- Question -->
+                <StackPanel Visibility="{Binding ShowQuestion, Converter={StaticResource BoolToVis}}">
+                    <WrapPanel>
+                        <Border Style="{StaticResource Chip}">
+                            <TextBlock Style="{StaticResource ChipText}" Text="{Binding Question.Topic}" />
+                        </Border>
+                        <Border Style="{StaticResource Chip}">
+                            <TextBlock Style="{StaticResource ChipText}" Text="{Binding Question.DifficultyText}" />
+                        </Border>
+                        <Border Style="{StaticResource Chip}">
+                            <TextBlock Style="{StaticResource ChipText}" Text="{Binding Question.StageText}" />
+                        </Border>
+                        <Border Style="{StaticResource Chip}" Background="{DynamicResource AccentFillBrush}"
+                                Visibility="{Binding Question.IsNew, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource ChipText}" Text="NEW" Foreground="White" FontWeight="SemiBold" />
+                        </Border>
+                    </WrapPanel>
+
+                    <TextBlock Margin="0,14,0,0" FontSize="20" TextWrapping="Wrap" LineHeight="28"
+                               views:InlineText.Markdown="{Binding Question.Prompt}" />
+
+                    <Border Style="{StaticResource CodeFrame}" Margin="0,14,0,0"
+                            Visibility="{Binding Question.HasCode, Converter={StaticResource BoolToVis}}">
+                        <views:CodeViewer Code="{Binding Question.Code}" />
+                    </Border>
+
+                    <!-- Multiple choice -->
+                    <ItemsControl Margin="0,18,0,0" ItemsSource="{Binding Options}"
+                                  Visibility="{Binding Question.IsMultipleChoice, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:OptionViewModel}">
+                                <Button Style="{StaticResource OptionButton}"
+                                        AutomationProperties.Name="{Binding Text}"
+                                        AutomationProperties.AutomationId="{Binding Number, StringFormat=Option{0}}"
+                                        Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource ChipBackgroundBrush}" VerticalAlignment="Top" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Number}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Grid.Column="1" FontSize="15" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                   views:InlineText.Markdown="{Binding Text}"
+                                                   Visibility="{Binding IsPlain, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock Grid.Column="1" FontSize="13.5" FontFamily="{StaticResource CodeFont}" TextWrapping="NoWrap"
+                                                   Text="{Binding Text}" VerticalAlignment="Center"
+                                                   Visibility="{Binding IsCode, Converter={StaticResource BoolToVis}}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Typed -->
+                    <StackPanel Margin="0,18,0,0" Visibility="{Binding Question.IsTyped, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding Question.TypedHint}" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,6" />
+                        <TextBox x:Name="AnswerBox" FontSize="15"
+                                 Text="{Binding TypedAnswer, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="{Binding ShowFeedback}">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Question.IsMultiLineAnswer}" Value="True">
+                                            <Setter Property="AcceptsReturn" Value="True" />
+                                            <Setter Property="AcceptsTab" Value="True" />
+                                            <Setter Property="FontFamily" Value="{StaticResource CodeFont}" />
+                                            <Setter Property="FontSize" Value="14" />
+                                            <Setter Property="MinHeight" Value="120" />
+                                            <Setter Property="VerticalContentAlignment" Value="Top" />
+                                            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <Button Content="Submit" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                                Command="{Binding SubmitCommand}"
+                                Visibility="{Binding IsAnswering, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Feedback -->
+                <Border x:Name="FeedbackPanel" Style="{StaticResource FeedbackPanel}" Margin="0,22,0,0"
+                        Visibility="{Binding ShowFeedback, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource FeedbackTitle}" Text="{Binding Feedback.Title}" />
+                        <StackPanel Margin="0,10,0,0" Visibility="{Binding Feedback.ShowAnswer, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="ANSWER" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+                            <TextBlock FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       views:InlineText.Markdown="{Binding Feedback.Answer}"
+                                       Visibility="{Binding Feedback.ShowAnswerAsText, Converter={StaticResource BoolToVis}}" />
+                            <Border Style="{StaticResource CodeFrame}" Background="{DynamicResource SurfaceBrush}"
+                                    Visibility="{Binding Feedback.ShowAnswerAsCode, Converter={StaticResource BoolToVis}}">
+                                <views:CodeViewer Code="{Binding Feedback.Answer}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Margin="0,12,0,0" FontSize="14" LineHeight="21" TextWrapping="Wrap"
+                                   views:InlineText.Markdown="{Binding Feedback.Explanation}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Finished / nothing due -->
+                <StackPanel Margin="0,90,0,0" HorizontalAlignment="Center" MaxWidth="460"
+                            Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}">
+                    <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource CorrectSoftBrush}" HorizontalAlignment="Center">
+                        <TextBlock Text="✔" FontSize="34" Foreground="{DynamicResource CorrectBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding SummaryText}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,18,0,0" />
+                    <TextBlock Text="{Binding NextReviewText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="15"
+                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,26,0,0">
+                        <Button Content="Close" Style="{StaticResource PrimaryButton}" Command="{Binding CloseCommand}" />
+                        <Button Content="Settings" Style="{StaticResource SecondaryButton}" Margin="0" Command="{Binding OpenSettingsCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ============ Footer: actions ============ -->
+        <Border Grid.Row="2" Padding="28,12" BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="0,1,0,0"
+                Visibility="{Binding ShowQuestion, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <!-- While answering: keyboard hint -->
+                <TextBlock Foreground="{DynamicResource MutedTextBrush}" Padding="0,7" Text="{Binding Question.KeyHint}"
+                           Visibility="{Binding IsAnswering, Converter={StaticResource BoolToVis}}" />
+
+                <!-- After answering -->
+                <DockPanel Visibility="{Binding ShowFeedback, Converter={StaticResource BoolToVis}}">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Flag question (F)" Style="{StaticResource SecondaryButton}" Margin="0"
+                                Command="{Binding StartFlagCommand}"
+                                Visibility="{Binding CanStartFlag, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="Flagged for review ✓" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"
+                                   Visibility="{Binding Flagged, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                    <WrapPanel>
+                        <Button Content="Next (Enter)" Style="{StaticResource PrimaryButton}" Command="{Binding NextCommand}"
+                                Visibility="{Binding Feedback.ShowNext, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="I guessed (G)" Style="{StaticResource SecondaryButton}" Command="{Binding GuessedCommand}"
+                                Visibility="{Binding Feedback.IsCorrect, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="Too easy (E)" Style="{StaticResource SecondaryButton}" Command="{Binding EasyCommand}"
+                                Visibility="{Binding Feedback.IsCorrect, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="I was actually right (O)" Style="{StaticResource SecondaryButton}" Command="{Binding OverrideCommand}"
+                                Visibility="{Binding Feedback.ShowOverride, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="I got it right (Y)" Style="{StaticResource PrimaryButton}" Command="{Binding SelfRightCommand}"
+                                Visibility="{Binding Feedback.NeedsSelfGrade, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="I got it wrong (N)" Style="{StaticResource SecondaryButton}" Command="{Binding SelfWrongCommand}"
+                                Visibility="{Binding Feedback.NeedsSelfGrade, Converter={StaticResource BoolToVis}}" />
+                    </WrapPanel>
+                </DockPanel>
+
+                <!-- Flag note -->
+                <DockPanel Margin="0,10,0,0" Visibility="{Binding IsFlagging, Converter={StaticResource BoolToVis}}">
+                    <Button DockPanel.Dock="Right" Content="Cancel" Style="{StaticResource SecondaryButton}" Margin="0" Command="{Binding CancelFlagCommand}" />
+                    <Button DockPanel.Dock="Right" Content="Save flag" Style="{StaticResource PrimaryButton}" Command="{Binding SaveFlagCommand}" />
+                    <TextBox x:Name="FlagBox" Margin="0,0,8,0" Text="{Binding FlagNote, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="What's wrong with this question? (optional) Enter to save, Esc to cancel." />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

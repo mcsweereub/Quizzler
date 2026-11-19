@@ -138,6 +138,26 @@ public sealed class QuizDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Notification_settings_default_then_persist()
+    {
+        Assert.Equal(new NotificationSettings(), _db.GetNotificationSettings());
+
+        var custom = new NotificationSettings { Enabled = false, ReminderIntervalMinutes = 30, QuietStartHour = 21, QuietEndHour = 7 };
+        _db.SaveNotificationSettings(custom);
+
+        Assert.Equal(custom, QuizDatabase.Open(_path).GetNotificationSettings());
+    }
+
+    [Fact]
+    public void Raw_settings_round_trip()
+    {
+        Assert.Null(_db.GetSetting("x"));
+        _db.SetSetting("x", "1");
+        _db.SetSetting("x", "2");
+        Assert.Equal("2", _db.GetSetting("x"));
+    }
+
+    [Fact]
     public void Invalid_settings_are_rejected()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => _db.SaveStudySettings(new StudySettings { DayRolloverHour = 24 }));

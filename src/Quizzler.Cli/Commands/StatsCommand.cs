@@ -33,7 +33,7 @@ public sealed class StatsCommand : Command<DbSettings>
         overview.AddRow("Seen", $"{cards.Count}");
         overview.AddRow("At typed (recall) stage", $"{cards.Values.Count(c => c.Stage == CardStage.Typed)}");
         overview.AddRow("[bold]Due now[/]", $"[bold]{summary.DueReviews} reviews + {summary.NewAvailable} new[/]");
-        overview.AddRow("Next review", summary.NextDueAt is { } next ? Humanize(next - now) : "-");
+        overview.AddRow("Next review", summary.NextDueAt is { } next ? TimeText.Until(next - now) : "-");
         overview.AddRow("Answered today", today.Count == 0 ? "0" : $"{today.Count} ({100 * correctToday / today.Count}% correct)");
         AnsiConsole.Write(new Panel(overview).Header("Quizzler").Border(BoxBorder.Rounded));
 
@@ -60,12 +60,4 @@ public sealed class StatsCommand : Command<DbSettings>
 
         return 0;
     }
-
-    internal static string Humanize(TimeSpan span) => span switch
-    {
-        { TotalMinutes: < 1 } => "now",
-        { TotalHours: < 1 } => $"in {(int)Math.Ceiling(span.TotalMinutes)} min",
-        { TotalDays: < 1 } => $"in {(int)Math.Round(span.TotalHours)} h",
-        _ => $"in {(int)Math.Round(span.TotalDays)} days",
-    };
 }

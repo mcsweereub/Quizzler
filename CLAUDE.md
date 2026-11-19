@@ -12,12 +12,52 @@ src/Quizzler.CodeRunner  Roslyn: compiles + runs C# snippets; ContentVerifier ch
 src/Quizzler.Data        SQLite store (QuizDatabase implements Core's IQuizStore). Imported questions,
                          cards (progress), review log, flags, settings. Migrations via PRAGMA user_version.
 src/Quizzler.Cli         `quizzler` command: quiz, stats, validate, import, flags, settings.
+src/Quizzler.App         WPF tray app (net10.0-windows): tray icon with due-count badge, reminder
+                         notifications, quiz window, start with Windows. Ships content/ and auto-imports it.
 tests/Quizzler.Tests     Unit + integration tests, and ContentBankTests (validates and executes content/).
 content/<area>/<topic>.json   The question bank (source of truth for questions).
 schema/questions.schema.json  JSON Schema for content files (editor validation/autocomplete).
+tools/                   install.ps1 / uninstall.ps1 (per-user install), make-icon.ps1 (regenerates the .ico).
 ```
 
-Planned: `Quizzler.App` (WPF window + tray icon + toast notifications).
+### App architecture
+
+- `App.xaml.cs`: lifetime. Single instance per database (`SingleInstance`); a second launch signals the
+  first to open its window. A 1-minute `DispatcherTimer` calls `Refresh()`: due counts → tray badge/tooltip,
+  and `NotificationPolicy.ShouldNotify` (Core, unit-tested) decides on reminders.
+- `--background` = tray only (used by the Run-key startup entry). `--db <path>` = alternate database.
+- `QuizViewModel` wraps Core's `StudySession` (which holds all the session logic and is unit-tested);
+  `QuizWindow` is XAML + keyboard shortcuts only.
+- `StartupRegistration`: HKCU Run key. **Dev builds (running from bin\Debug|Release) never touch it
+  automatically**; only an installed copy enables it on first run.
+- `BundledContent`: imports content shipped next to the exe when its fingerprint changes.
+- Notifications (`Services/Notifiers.cs`): `ToastNotifier` uses the Windows App SDK (`Microsoft.WindowsAppSDK.Foundation`,
+  bundled self-contained, so no runtime install) for toasts with "Start quiz" / "Snooze 1 hour" buttons.
+  Falls back to `BalloonNotifier` (H.NotifyIcon tray balloons) if the SDK can't initialise. Button clicks
+  arrive on a background thread → marshalled to the dispatcher. A click while the app isn't running launches
+  it; `ToastNotifier.GetLaunchAction()` reads which button. `--unregister-notifications` removes the registration.
+- Theming (`Services/ThemeService.cs`): System/Light/Dark. Sets `Application.ThemeMode` (Fluent) and swaps
+  `Themes/Light.xaml` ↔ `Themes/Dark.xaml`. **App colours must be referenced with `DynamicResource`**, and every
+  key must exist in both files. Code blocks recolour via `CodeHighlighting` (a dark copy of AvalonEdit's C# scheme).
+- Pack URIs must be assembly-qualified (`pack://application:,,,/Quizzler.App;component/...`).
+- Settings window (`SettingsWindow` + `SettingsViewModel`): theme (live preview, Cancel reverts), study and
+  notification settings, start with Windows. Theme is stored in the `settings` table under key `theme`.
+- Log: `%LOCALAPPDATA%\Quizzler\quizzler.log`.
+
+### Testing the app yourself
+
+**Never launch the app's windows on the user's desktop.** A process started from the foreground app gets
+keyboard focus even with `ShowActivated=false`, so the user's typing lands in the quiz (this happened: it
+recorded their keystrokes as answers and triggered shortcuts). Safe options:
+- Logic: unit-test `StudySession`, `NotificationPolicy`, etc. in Core.
+- Visuals: render off-screen. Build a scratch harness that references Quizzler.App, does `new App()` +
+  `InitializeComponent()`, applies a theme, builds the window with a scratch-DB view model, detaches
+  `window.Content`, measures/arranges and renders it with `RenderTargetBitmap`. **Never pump the dispatcher
+  in the harness**: `Application`'s constructor queues `OnStartup`, which would start the real app against the
+  user's real database (also happened).
+- Background-only checks (`--background --db <scratch>`) show no window; read the log for notifications.
+- If a visible run is unavoidable, ask the user first. Use `--db <scratch>` and `--no-activate`.
+Don't capture the whole screen; it may contain the user's private windows.
 
 ## Commands
 
@@ -29,7 +69,11 @@ dotnet run --project src/Quizzler.Cli -- import     # validate, then import into
 dotnet run --project src/Quizzler.Cli -- quiz       # study in the terminal
 dotnet run --project src/Quizzler.Cli -- stats
 dotnet run --project src/Quizzler.Cli -- flags      # questions the user flagged as wrong/unclear
+dotnet run --project src/Quizzler.App               # the tray app (dev build)
+powershell -ExecutionPolicy Bypass -File tools/install.ps1   # install/update to %LOCALAPPDATA%\Programs\Quizzler
 ```
+
+After adding questions, the user re-runs `tools/install.ps1`; the installed app imports the new content on launch.
 
 All database commands take `--db <path>`; default is `$QUIZZLER_DB`, then `%LOCALAPPDATA%\Quizzler\quizzler.db`.
 **When testing the CLI yourself, always pass `--db` with a scratch path. Never touch the user's real database.**

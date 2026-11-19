@@ -298,14 +298,51 @@ public sealed class QuizDatabase : IQuizStore
         tx.Commit();
     }
 
-    private int? GetIntSetting(string key)
+    public NotificationSettings GetNotificationSettings()
+    {
+        var defaults = new NotificationSettings();
+        return new NotificationSettings
+        {
+            Enabled = GetSetting("notifications_enabled") is { } e ? e == "1" : defaults.Enabled,
+            ReminderIntervalMinutes = GetIntSetting("reminder_interval_minutes") ?? defaults.ReminderIntervalMinutes,
+            QuietStartHour = GetIntSetting("quiet_start_hour") ?? defaults.QuietStartHour,
+            QuietEndHour = GetIntSetting("quiet_end_hour") ?? defaults.QuietEndHour,
+        };
+    }
+
+    public void SaveNotificationSettings(NotificationSettings settings)
+    {
+        if (settings.ReminderIntervalMinutes < 1) throw new ArgumentOutOfRangeException(nameof(settings), "ReminderIntervalMinutes must be >= 1.");
+        if (settings.QuietStartHour is < 0 or > 23 || settings.QuietEndHour is < 0 or > 23)
+            throw new ArgumentOutOfRangeException(nameof(settings), "Quiet hours must be 0-23.");
+
+        using var connection = Connect();
+        using var tx = connection.BeginTransaction();
+        SetSetting(connection, tx, "notifications_enabled", settings.Enabled ? "1" : "0");
+        SetSetting(connection, tx, "reminder_interval_minutes", settings.ReminderIntervalMinutes.ToString(CultureInfo.InvariantCulture));
+        SetSetting(connection, tx, "quiet_start_hour", settings.QuietStartHour.ToString(CultureInfo.InvariantCulture));
+        SetSetting(connection, tx, "quiet_end_hour", settings.QuietEndHour.ToString(CultureInfo.InvariantCulture));
+        tx.Commit();
+    }
+
+    /// <summary>Raw key/value access for app-level flags that don't warrant their own settings record.</summary>
+    public string? GetSetting(string key)
     {
         using var connection = Connect();
         using var cmd = Command(connection, null, "SELECT value FROM settings WHERE key = $key", ("$key", key));
-        return cmd.ExecuteScalar() is string s && int.TryParse(s, CultureInfo.InvariantCulture, out var v) ? v : null;
+        return cmd.ExecuteScalar() as string;
     }
 
-    private static void SetSetting(SqliteConnection connection, SqliteTransaction tx, string key, string value) =>
+    public void SetSetting(string key, string value)
+    {
+        using var connection = Connect();
+        SetSetting(connection, null, key, value);
+    }
+
+    private int? GetIntSetting(string key) =>
+        GetSetting(key) is { } s && int.TryParse(s, CultureInfo.InvariantCulture, out var v) ? v : null;
+
+    private static void SetSetting(SqliteConnection connection, SqliteTransaction? tx, string key, string value) =>
         Execute(connection, tx,
             "INSERT INTO settings (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             ("$key", key), ("$value", value));

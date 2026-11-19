@@ -1,0 +1,117 @@
+<Window x:Class="Quizzler.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Quizzler.App.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+        Title="Quizzler settings"
+        Icon="pack://application:,,,/Quizzler.App;component/Assets/quizzler.ico"
+        Width="560" Height="720" MinWidth="460" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="28,6,28,24">
+
+                <!-- ============ Appearance ============ -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Appearance" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Theme" />
+                    <ComboBox Grid.Column="1" AutomationProperties.AutomationId="Theme" AutomationProperties.Name="Theme"
+                              ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" />
+                </Grid>
+
+                <!-- ============ Study ============ -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Study" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="New questions per day" />
+                        <TextBlock Style="{StaticResource FieldHint}" Text="Reviews are never capped, only brand-new questions." />
+                    </StackPanel>
+                    <TextBox Grid.Column="1" VerticalAlignment="Center" AutomationProperties.AutomationId="NewPerDay"
+                             Text="{Binding NewPerDay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="New day starts at" />
+                        <TextBlock Style="{StaticResource FieldHint}" Text="Late-night sessions before this time count as the previous day." />
+                    </StackPanel>
+                    <ComboBox Grid.Row="2" Grid.Column="1" VerticalAlignment="Center"
+                              ItemsSource="{Binding Hours}" SelectedItem="{Binding RolloverHour}" />
+                </Grid>
+
+                <!-- ============ Notifications ============ -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Notifications" />
+                <CheckBox Content="Remind me when questions are due" AutomationProperties.AutomationId="NotificationsEnabled"
+                          IsChecked="{Binding NotificationsEnabled}" />
+                <StackPanel Margin="0,12,0,0" IsEnabled="{Binding NotificationsEnabled}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Remind me at most" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Intervals}" SelectedItem="{Binding ReminderInterval}" />
+                    </Grid>
+                    <CheckBox Margin="0,14,0,0" Content="Quiet hours (no reminders)" IsChecked="{Binding QuietHoursEnabled}" />
+                    <StackPanel Orientation="Horizontal" Margin="28,8,0,0" IsEnabled="{Binding QuietHoursEnabled}">
+                        <TextBlock Text="From" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ComboBox Width="110" ItemsSource="{Binding Hours}" SelectedItem="{Binding QuietStart}" />
+                        <TextBlock Text="to" VerticalAlignment="Center" Margin="10,0" />
+                        <ComboBox Width="110" ItemsSource="{Binding Hours}" SelectedItem="{Binding QuietEnd}" />
+                    </StackPanel>
+                    <Button Content="Send a test notification" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                            Margin="0,16,0,0" Command="{Binding TestNotificationCommand}" />
+                </StackPanel>
+
+                <!-- ============ General ============ -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="General" />
+                <CheckBox Content="Start Quizzler when I sign in to Windows" AutomationProperties.AutomationId="StartWithWindows"
+                          IsChecked="{Binding StartWithWindows}" />
+                <TextBlock Style="{StaticResource FieldHint}" Margin="28,4,0,0"
+                           Text="This is a development build: turning this on will start this build at sign-in, not the installed copy."
+                           Visibility="{Binding IsDevBuild, Converter={StaticResource BoolToVis}}" />
+
+                <TextBlock Margin="0,18,0,4" Text="Your progress is stored in" />
+                <TextBox IsReadOnly="True" Text="{Binding DataFolder, Mode=OneWay}" FontFamily="{StaticResource CodeFont}" FontSize="12" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Content="Open data folder" Style="{StaticResource SecondaryButton}" Command="{Binding OpenDataFolderCommand}" />
+                    <Button Content="Open log" Style="{StaticResource SecondaryButton}" Command="{Binding OpenLogCommand}" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource FieldHint}"
+                           Text="To move your progress to another PC, close Quizzler and copy quizzler.db from this folder." />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Padding="28,12" BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="0,1,0,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Command="{Binding CancelCommand}" IsCancel="True" />
+                    <Button Content="Save" Style="{StaticResource PrimaryButton}" Margin="0" Command="{Binding SaveCommand}" IsDefault="True" />
+                </StackPanel>
+                <TextBlock Text="{Binding Error}" Foreground="{DynamicResource WrongBrush}" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
