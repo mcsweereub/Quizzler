@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-strings-0001",
+      "type": "concept",
+      "topic": "csharp/strings",
+      "difficulty": 1,
+      "tags": ["string", "immutability"],
+      "prompt": "Are .NET strings mutable or immutable?",
+      "answer": "Immutable",
+      "distractors": ["Mutable", "Immutable only when declared const", "Mutable until they are first read"],
+      "explanation": "Strings are immutable: every 'modifying' method (`Replace`, `ToUpper`, `+`) returns a new string. That makes them safe to share and use as dictionary keys, but means repeated concatenation creates lots of garbage."
+    },
+    {
+      "id": "cs-strings-0002",
+      "type": "pick-the-code",
+      "topic": "csharp/strings",
+      "difficulty": 2,
+      "tags": ["stringbuilder", "performance"],
+      "prompt": "You need to build one string by appending 10,000 numbers in a loop. Which approach is the most efficient?",
+      "answer": "var sb = new StringBuilder();\nfor (int i = 0; i < 10_000; i++)\n    sb.Append(i);\nvar result = sb.ToString();",
+      "distractors": [
+        "var result = \"\";\nfor (int i = 0; i < 10_000; i++)\n    result += i;",
+        "var result = \"\";\nfor (int i = 0; i < 10_000; i++)\n    result = string.Concat(result, i);",
+        "var result = \"\";\nfor (int i = 0; i < 10_000; i++)\n    result = $\"{result}{i}\";"
+      ],
+      "explanation": "Because strings are immutable, each `+=`, `Concat` or interpolation inside the loop copies the entire string so far, which is O(n²) overall. `StringBuilder` appends into a growable buffer and builds the final string once."
+    },
+    {
+      "id": "cs-strings-0003",
+      "type": "predict-output",
+      "topic": "csharp/strings",
+      "difficulty": 1,
+      "tags": ["string", "immutability"],
+      "prompt": "What does this program print?",
+      "code": "string s = \"Hello\";\ns.ToUpper();\nConsole.WriteLine(s);",
+      "answer": "Hello",
+      "distractors": ["HELLO", "hello", "Compile error"],
+      "explanation": "`ToUpper()` returns a *new* string; it can't change `s` because strings are immutable. The return value is discarded, so `s` is unchanged. You'd need `s = s.ToUpper();`."
+    },
+    {
+      "id": "cs-strings-0004",
+      "type": "concept",
+      "topic": "csharp/strings",
+      "difficulty": 2,
+      "tags": ["string-literals", "verbatim"],
+      "prompt": "What kind of string literal does the `@` prefix create, as in `@\"C:\\temp\\new\"`?",
+      "answer": "Verbatim string",
+      "accepted": ["verbatim", "verbatim string literal", "verbatim literal"],
+      "distractors": ["Interpolated string", "Raw string literal", "Interned string", "UTF-8 string literal"],
+      "explanation": "A verbatim string (`@\"...\"`) treats backslashes literally and can span lines; only `\"\"` is special (an escaped quote). Interpolated strings use `$`, raw string literals use triple quotes `\"\"\"`, and UTF-8 literals use the `u8` suffix."
+    }
+  ]
+}

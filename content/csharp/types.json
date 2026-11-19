@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-types-0001",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 1,
+      "tags": ["reference-types", "string"],
+      "prompt": "Is `string` a value type or a reference type in C#?",
+      "answer": "Reference type",
+      "accepted": ["reference"],
+      "distractors": ["Value type", "Neither, it is a special primitive", "Value type when short, reference type when long"],
+      "explanation": "`string` (System.String) is a class, so it is a reference type. It often *feels* like a value type because it is immutable and `==` is overloaded to compare contents rather than references."
+    },
+    {
+      "id": "cs-types-0002",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["struct", "value-types", "copy-semantics"],
+      "prompt": "What does this program print?",
+      "code": "var a = new Counter { Value = 1 };\nvar b = a;\nb.Value = 2;\nConsole.WriteLine(a.Value);\n\nstruct Counter { public int Value; }",
+      "answer": "1",
+      "distractors": ["2", "0", "Compile error"],
+      "explanation": "`Counter` is a struct, so `var b = a;` copies the whole value. Changing `b.Value` modifies the copy only; `a.Value` is still 1. If `Counter` were a class, both variables would point to the same object and it would print 2."
+    },
+    {
+      "id": "cs-types-0003",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["boxing", "value-types"],
+      "prompt": "What does this program print?",
+      "code": "int x = 5;\nobject o = x;\nx = 10;\nConsole.WriteLine(o);",
+      "answer": "5",
+      "distractors": ["10", "0", "System.Int32"],
+      "explanation": "Assigning an `int` to `object` *boxes* it: a copy of the value is placed in a new heap object. Later changes to `x` don't affect the boxed copy, so `o` still holds 5."
+    },
+    {
+      "id": "cs-types-0004",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["boxing", "value-types", "performance"],
+      "prompt": "What is the name for converting a value type to `object` (or an interface), which copies it into a new heap allocation?",
+      "answer": "Boxing",
+      "distractors": ["Unboxing", "Casting", "Marshalling", "Pinning"],
+      "explanation": "Boxing wraps a value type in a heap-allocated object. Unboxing is the reverse (an explicit cast back to the value type). Boxing in hot loops costs allocations and GC pressure, which is one reason generics like `List<int>` replaced `ArrayList`."
+    },
+    {
+      "id": "cs-types-0005",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["nullable", "null-coalescing"],
+      "prompt": "What does this program print?",
+      "code": "int? a = null;\nint b = a ?? -1;\nConsole.WriteLine(b);\nConsole.WriteLine(a.HasValue);",
+      "answer": "-1\nFalse",
+      "distractors": ["-1\nfalse", "0\nFalse", "null\nFalse"],
+      "explanation": "`??` returns the right-hand side when the left is null, so `b` is -1. `HasValue` is false for a null `Nullable<int>`. Note that `bool` prints as `False` with a capital F in C#."
+    },
+    {
+      "id": "cs-types-0006",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 3,
+      "tags": ["string", "equality", "reference-equality"],
+      "prompt": "What does this program print?",
+      "code": "string a = \"hello\";\nstring b = new string(\"hello\".ToCharArray());\nConsole.WriteLine(a == b);\nConsole.WriteLine((object)a == (object)b);",
+      "answer": "True\nFalse",
+      "distractors": ["True\nTrue", "False\nFalse", "False\nTrue"],
+      "explanation": "`string` overloads `==` to compare contents, so the first line is True. Casting both to `object` makes the compiler use reference equality instead. `b` was built at runtime, so it is a different instance from the interned literal `a`: False."
+    },
+    {
+      "id": "cs-types-0007",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["parameters", "ref", "out"],
+      "prompt": "Which parameter modifier passes an argument by reference and requires the method to assign it before returning?",
+      "answer": "out",
+      "distractors": ["ref", "in", "params"],
+      "explanation": "`out` parameters must be assigned by the method and need not be initialised by the caller (e.g. `int.TryParse(s, out var n)`). `ref` requires the caller to initialise it and the method may or may not assign. `in` is a read-only reference."
+    }
+  ]
+}

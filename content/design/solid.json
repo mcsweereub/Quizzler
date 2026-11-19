@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "design-solid-0001",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 2,
+      "tags": ["solid", "lsp"],
+      "prompt": "Which SOLID principle says a subtype must be usable anywhere its base type is expected, without breaking correctness?",
+      "answer": "Liskov Substitution Principle",
+      "accepted": ["liskov substitution", "liskov", "lsp"],
+      "distractors": ["Open/Closed Principle", "Interface Segregation Principle", "Dependency Inversion Principle", "Single Responsibility Principle"],
+      "explanation": "Liskov Substitution: if code works with a `Bird`, it must still work when handed any subclass of `Bird`. The classic violation is `Square : Rectangle`, where setting width also changes height and breaks callers' assumptions."
+    },
+    {
+      "id": "design-solid-0002",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 2,
+      "tags": ["solid", "dip", "dependency-injection"],
+      "prompt": "Which SOLID principle says high-level modules should depend on abstractions rather than on concrete low-level implementations?",
+      "answer": "Dependency Inversion Principle",
+      "accepted": ["dependency inversion", "dip"],
+      "distractors": ["Dependency Injection", "Interface Segregation Principle", "Liskov Substitution Principle", "Open/Closed Principle"],
+      "explanation": "Dependency Inversion is the principle (depend on `IOrderRepository`, not `SqlOrderRepository`). Dependency *Injection* is a technique for achieving it, by passing dependencies in via constructors, but it is not one of the SOLID letters."
+    }
+  ]
+}

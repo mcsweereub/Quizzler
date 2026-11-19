@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quizzler.local/questions.schema.json",
+  "title": "Quizzler question file",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["questions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "questions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/question" }
+    }
+  },
+  "$defs": {
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "topic", "difficulty", "prompt", "answer", "distractors", "explanation"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*-\\d{4}$",
+          "description": "Stable unique id, e.g. cs-async-0007. Never change once published."
+        },
+        "type": {
+          "enum": ["concept", "predict-output", "pick-the-code"]
+        },
+        "topic": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+(/[a-z0-9-]+)*$",
+          "description": "Slash path, e.g. csharp/async"
+        },
+        "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9#.+-]+$" },
+          "uniqueItems": true
+        },
+        "prompt": { "type": "string", "minLength": 1 },
+        "code": {
+          "type": "string",
+          "description": "C# top-level statements. Required for predict-output."
+        },
+        "answer": { "type": "string", "minLength": 1 },
+        "accepted": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Other typed answers accepted as correct in recall mode."
+        },
+        "distractors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 2,
+          "maxItems": 5,
+          "uniqueItems": true
+        },
+        "explanation": { "type": "string", "minLength": 1 },
+        "recall": {
+          "enum": ["exact", "self"],
+          "description": "How typed answers are graded. Defaults: exact for concept/predict-output, self for pick-the-code."
+        }
+      },
+      "if": { "properties": { "type": { "const": "predict-output" } } },
+      "then": { "required": ["code"] }
+    }
+  }
+}

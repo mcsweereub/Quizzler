@@ -1,0 +1,53 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-collections-0001",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["dictionary", "big-o", "hashing"],
+      "prompt": "What is the average time complexity of looking up a key in a `Dictionary<TKey, TValue>`?",
+      "answer": "O(1)",
+      "accepted": ["constant", "constant time"],
+      "distractors": ["O(log n)", "O(n)", "O(n log n)"],
+      "explanation": "`Dictionary` is a hash table: it hashes the key with `GetHashCode()` to jump straight to a bucket, so lookups are O(1) on average. Lots of hash collisions (e.g. a bad `GetHashCode`) degrade it towards O(n). `SortedDictionary` is O(log n)."
+    },
+    {
+      "id": "cs-collections-0002",
+      "type": "predict-output",
+      "topic": "csharp/collections",
+      "difficulty": 3,
+      "tags": ["list", "foreach", "enumerator", "exceptions"],
+      "prompt": "What does this program print?",
+      "code": "var list = new List<int> { 1, 2, 3 };\ntry\n{\n    foreach (var n in list)\n        if (n == 2) list.Remove(n);\n    Console.WriteLine(\"Done\");\n}\ncatch (InvalidOperationException)\n{\n    Console.WriteLine(\"Exception\");\n}\nConsole.WriteLine(list.Count);",
+      "answer": "Exception\n2",
+      "distractors": ["Done\n2", "Done\n3", "Exception\n3"],
+      "explanation": "Modifying a `List<T>` while enumerating it invalidates the enumerator. The `Remove` succeeds (count becomes 2), then the next `MoveNext()` notices the list's version changed and throws `InvalidOperationException`. To remove while iterating, use `list.RemoveAll(...)` or loop backwards with a `for`."
+    },
+    {
+      "id": "cs-collections-0003",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["hashset", "uniqueness", "big-o"],
+      "prompt": "Which built-in collection guarantees unique elements and has O(1) average `Contains`?",
+      "answer": "HashSet<T>",
+      "accepted": ["HashSet"],
+      "distractors": ["List<T>", "SortedSet<T>", "Queue<T>", "LinkedList<T>"],
+      "explanation": "`HashSet<T>` is a hash table of values only: `Add` returns false for duplicates and `Contains` is O(1) on average. `SortedSet<T>` also enforces uniqueness but is a tree, so operations are O(log n). `List<T>.Contains` is O(n)."
+    },
+    {
+      "id": "cs-collections-0004",
+      "type": "predict-output",
+      "topic": "csharp/collections",
+      "difficulty": 3,
+      "tags": ["stack", "queue", "enumeration-order"],
+      "prompt": "What does this program print?",
+      "code": "var stack = new Stack<int>();\nstack.Push(1);\nstack.Push(2);\nstack.Push(3);\nvar queue = new Queue<int>(stack);\nConsole.WriteLine(stack.Pop());\nConsole.WriteLine(queue.Dequeue());",
+      "answer": "3\n3",
+      "distractors": ["3\n1", "1\n1", "1\n3"],
+      "explanation": "`Pop` returns the last item pushed: 3. The trick is `new Queue<int>(stack)`: it *enumerates* the stack, and a stack enumerates in pop order (3, 2, 1). So the queue's first item is 3."
+    }
+  ]
+}

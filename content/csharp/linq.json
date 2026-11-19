@@ -1,0 +1,79 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-linq-0001",
+      "type": "predict-output",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "deferred-execution"],
+      "prompt": "What does this program print?",
+      "code": "var numbers = new List<int> { 1, 2, 3 };\nvar query = numbers.Where(n => n > 1);\nnumbers.Add(4);\nConsole.WriteLine(query.Count());",
+      "answer": "3",
+      "distractors": ["2", "4", "1"],
+      "explanation": "`Where` doesn't run when it is called; it builds a query that runs when enumerated (here, by `Count()`). By then 4 has been added, so 2, 3 and 4 match. Call `.ToList()` to capture results immediately."
+    },
+    {
+      "id": "cs-linq-0002",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "deferred-execution"],
+      "prompt": "What is the term for LINQ queries like `Where` and `Select` not running until the result is enumerated?",
+      "answer": "Deferred execution",
+      "accepted": ["deferred", "lazy evaluation", "lazy execution"],
+      "distractors": ["Eager execution", "Lazy loading", "Late binding", "Query compilation"],
+      "explanation": "Deferred execution means the query is a recipe, run each time it is enumerated (so it can run multiple times!). Operators like `ToList`, `Count`, `First` and `Sum` force immediate execution. 'Lazy loading' is a different concept: an ORM fetching related data on first access."
+    },
+    {
+      "id": "cs-linq-0003",
+      "type": "predict-output",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "orderby", "where", "select"],
+      "prompt": "What does this program print?",
+      "code": "var words = new[] { \"apple\", \"fig\", \"banana\", \"kiwi\" };\nvar result = words\n    .Where(w => w.Length > 3)\n    .OrderBy(w => w.Length)\n    .Select(w => w.ToUpper());\nConsole.WriteLine(string.Join(\",\", result));",
+      "answer": "KIWI,APPLE,BANANA",
+      "distractors": ["APPLE,BANANA,KIWI", "FIG,KIWI,APPLE,BANANA", "BANANA,APPLE,KIWI"],
+      "explanation": "`Where` drops \"fig\" (3 chars). `OrderBy` sorts by length: kiwi (4), apple (5), banana (6). `Select` upper-cases each one."
+    },
+    {
+      "id": "cs-linq-0004",
+      "type": "predict-output",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "firstordefault", "default-values"],
+      "prompt": "What does this program print?",
+      "code": "var empty = new List<int>();\nConsole.WriteLine(empty.FirstOrDefault());\nConsole.WriteLine(empty.DefaultIfEmpty(-1).First());",
+      "answer": "0\n-1",
+      "distractors": ["null\n-1", "0\n0", "-1\n-1"],
+      "explanation": "`FirstOrDefault` on an empty sequence returns `default(T)`, which for `int` is 0, not null. `DefaultIfEmpty(-1)` turns an empty sequence into one containing -1. (Since .NET 6 you can also write `FirstOrDefault(-1)`.)"
+    },
+    {
+      "id": "cs-linq-0005",
+      "type": "pick-the-code",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "groupby", "aggregation"],
+      "prompt": "Given a `List<Order>` called `orders`, which query gives each customer's total order `Amount`?",
+      "answer": "orders.GroupBy(o => o.CustomerId)\n      .Select(g => new { CustomerId = g.Key, Total = g.Sum(o => o.Amount) });",
+      "distractors": [
+        "orders.Select(o => new { o.CustomerId, Total = orders.Sum(x => x.Amount) });",
+        "orders.GroupBy(o => o.CustomerId)\n      .Select(g => new { CustomerId = g.Key, Total = g.Count() });",
+        "orders.OrderBy(o => o.CustomerId)\n      .Select(o => new { o.CustomerId, Total = o.Amount });"
+      ],
+      "explanation": "`GroupBy` buckets orders by customer; each group `g` has a `Key` (the CustomerId) and is itself a sequence of that customer's orders, so `g.Sum(o => o.Amount)` totals them. The others give the grand total on every row, an order count, or no aggregation at all."
+    },
+    {
+      "id": "cs-linq-0006",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "selectmany"],
+      "prompt": "Which LINQ method flattens a sequence of sequences (e.g. each customer's list of orders) into one sequence?",
+      "answer": "SelectMany",
+      "distractors": ["Select", "Concat", "Aggregate", "Zip"],
+      "explanation": "`customers.SelectMany(c => c.Orders)` yields every order from every customer in one flat sequence. `Select(c => c.Orders)` would give you a sequence of lists instead."
+    }
+  ]
+}

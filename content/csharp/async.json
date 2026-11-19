@@ -1,0 +1,67 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-async-0001",
+      "type": "predict-output",
+      "topic": "csharp/async",
+      "difficulty": 3,
+      "tags": ["async", "await", "execution-order"],
+      "prompt": "What does this program print?",
+      "code": "Console.WriteLine(\"A\");\nvar task = DoWorkAsync();\nConsole.WriteLine(\"C\");\nawait task;\nConsole.WriteLine(\"E\");\n\nasync Task DoWorkAsync()\n{\n    Console.WriteLine(\"B\");\n    await Task.Delay(100);\n    Console.WriteLine(\"D\");\n}",
+      "answer": "A\nB\nC\nD\nE",
+      "distractors": ["A\nC\nB\nD\nE", "A\nB\nD\nC\nE", "A\nC\nE\nB\nD"],
+      "explanation": "An async method runs *synchronously* until its first `await` on something incomplete, so \"B\" prints straight away. At `await Task.Delay` it returns an incomplete Task to the caller, which prints \"C\", then awaits the task: \"D\" after the delay, then \"E\"."
+    },
+    {
+      "id": "cs-async-0002",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 2,
+      "tags": ["async", "task", "async-void"],
+      "prompt": "What should an async method return if it produces no value (and isn't an event handler)?",
+      "answer": "Task",
+      "distractors": ["void", "Task<void>", "Task<object>"],
+      "explanation": "Return `Task` so callers can await it and observe exceptions. `async void` can't be awaited and its exceptions crash the process, so reserve it for event handlers. `Task<void>` doesn't exist."
+    },
+    {
+      "id": "cs-async-0003",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 3,
+      "tags": ["async", "deadlock", "synchronization-context"],
+      "prompt": "Blocking on a Task with `.Result` or `.Wait()` on a UI thread (which has a synchronization context) commonly causes what problem?",
+      "answer": "Deadlock",
+      "accepted": ["a deadlock"],
+      "distractors": ["Race condition", "Stack overflow", "Memory leak", "Thread pool starvation"],
+      "explanation": "The UI thread blocks waiting for the task, but the task's continuation is queued to resume *on the UI thread*, which is blocked. Neither can proceed. The fix is to use `await` all the way up rather than blocking."
+    },
+    {
+      "id": "cs-async-0004",
+      "type": "pick-the-code",
+      "topic": "csharp/async",
+      "difficulty": 3,
+      "tags": ["async", "concurrency", "whenall"],
+      "prompt": "Which code starts three independent downloads concurrently and waits for all of them to finish?",
+      "answer": "var results = await Task.WhenAll(\n    DownloadAsync(url1),\n    DownloadAsync(url2),\n    DownloadAsync(url3));",
+      "distractors": [
+        "var r1 = await DownloadAsync(url1);\nvar r2 = await DownloadAsync(url2);\nvar r3 = await DownloadAsync(url3);",
+        "var first = await Task.WhenAny(\n    DownloadAsync(url1),\n    DownloadAsync(url2),\n    DownloadAsync(url3));",
+        "var results = new[] { url1, url2, url3 }\n    .Select(u => DownloadAsync(u).Result)\n    .ToArray();"
+      ],
+      "explanation": "`Task.WhenAll` takes the already-started tasks and completes when all are done, returning all results. Awaiting one at a time runs them sequentially. `WhenAny` completes when the *first* finishes. `.Result` inside `Select` blocks on each in turn: sequential, and deadlock-prone."
+    },
+    {
+      "id": "cs-async-0005",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 4,
+      "tags": ["async", "configureawait", "synchronization-context", "libraries"],
+      "prompt": "Which call on an awaited Task tells it not to resume on the captured synchronization context (common advice for library code)?",
+      "answer": "ConfigureAwait(false)",
+      "accepted": ["ConfigureAwait", ".ConfigureAwait(false)"],
+      "distractors": ["Task.Run", "ContinueWith", "Task.Yield", "GetAwaiter"],
+      "explanation": "`await task.ConfigureAwait(false)` lets the continuation run on any thread-pool thread instead of marshalling back to the original context (e.g. the UI thread). It avoids needless context switches and the classic sync-over-async deadlock in library code. ASP.NET Core has no synchronization context, so it matters less there."
+    }
+  ]
+}

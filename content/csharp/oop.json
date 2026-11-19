@@ -1,0 +1,67 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-oop-0001",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["inheritance", "sealed"],
+      "prompt": "Which keyword prevents a class from being inherited from?",
+      "answer": "sealed",
+      "distractors": ["static", "abstract", "readonly", "final"],
+      "explanation": "`sealed` stops further derivation (and can also be applied to an `override` to stop it being overridden again). `final` is the Java equivalent and isn't a C# keyword. `static` classes are implicitly sealed, but that's a side effect, not their purpose."
+    },
+    {
+      "id": "cs-oop-0002",
+      "type": "predict-output",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["polymorphism", "virtual", "override", "method-hiding"],
+      "prompt": "What does this program print?",
+      "code": "Animal a = new Dog();\na.Speak();\na.Name();\n\nclass Animal\n{\n    public virtual void Speak() => Console.WriteLine(\"Animal speaks\");\n    public void Name() => Console.WriteLine(\"Animal\");\n}\n\nclass Dog : Animal\n{\n    public override void Speak() => Console.WriteLine(\"Dog speaks\");\n    public new void Name() => Console.WriteLine(\"Dog\");\n}",
+      "answer": "Dog speaks\nAnimal",
+      "distractors": ["Dog speaks\nDog", "Animal speaks\nAnimal", "Animal speaks\nDog"],
+      "explanation": "`override` replaces the virtual method, so the runtime type (Dog) decides: \"Dog speaks\". `new` only *hides* the base method; it isn't polymorphic, so the compile-time type of the variable (Animal) decides: \"Animal\"."
+    },
+    {
+      "id": "cs-oop-0003",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["inheritance", "interfaces"],
+      "prompt": "Can a C# class inherit from more than one base class?",
+      "answer": "No",
+      "distractors": ["Yes", "Only if all the base classes are abstract", "Only if the class is marked partial"],
+      "explanation": "C# has single inheritance for classes. A class can implement any number of interfaces, which is how you get multiple 'is-a' contracts without the diamond problem of multiple implementation inheritance."
+    },
+    {
+      "id": "cs-oop-0004",
+      "type": "predict-output",
+      "topic": "csharp/oop",
+      "difficulty": 4,
+      "tags": ["constructors", "initialization-order", "inheritance"],
+      "prompt": "What does this program print?",
+      "code": "new Child();\n\nclass Parent\n{\n    public Parent() => Console.WriteLine(\"Parent ctor\");\n}\n\nclass Child : Parent\n{\n    private readonly string _field = Log(\"Child field\");\n    public Child() => Console.WriteLine(\"Child ctor\");\n    private static string Log(string s) { Console.WriteLine(s); return s; }\n}",
+      "answer": "Child field\nParent ctor\nChild ctor",
+      "distractors": ["Parent ctor\nChild field\nChild ctor", "Parent ctor\nChild ctor\nChild field", "Child field\nChild ctor\nParent ctor"],
+      "explanation": "In C#, a derived class's field initialisers run *before* the base constructor is called, then the base constructor body, then the derived constructor body. (Java does it the other way round, which makes this a classic trick question.)"
+    },
+    {
+      "id": "cs-oop-0005",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["abstract-classes", "interfaces"],
+      "prompt": "What is the key difference between an abstract class and an interface in modern C#?",
+      "answer": "An abstract class can hold instance state and constructors, but a class can inherit only one; an interface has no instance state, and a class can implement many.",
+      "distractors": [
+        "Interfaces cannot contain any method bodies; abstract classes can.",
+        "Abstract classes cannot have constructors; interfaces can.",
+        "There is no difference since C# 8; they are interchangeable."
+      ],
+      "recall": "self",
+      "explanation": "Since C# 8, interfaces *can* have default method implementations (and static members), so 'no method bodies' is outdated. The lasting differences: abstract classes can have instance fields and constructors and use single inheritance; interfaces can't hold instance state, and a class can implement many of them."
+    }
+  ]
+}
