@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- A Windows 10 SDK version is required for Windows App SDK APIs (interactive toast notifications). -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <!-- Unpackaged app, with the Windows App SDK runtime bundled so users don't need to install it. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RootNamespace>Quizzler.App</RootNamespace>
+    <ApplicationIcon>Assets\quizzler.ico</ApplicationIcon>
+    <!-- Shown as the app name on Windows notifications. -->
+    <AssemblyTitle>Quizzler</AssemblyTitle>
+    <Product>Quizzler</Product>
+    <!-- Application.ThemeMode (Windows 11 Fluent styling) is still flagged experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quizzler.Core\Quizzler.Core.csproj" />
+    <ProjectReference Include="..\Quizzler.Data\Quizzler.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\quizzler.ico" />
+    <!-- Also as a loose file: toast notifications take the app icon by file path. -->
+    <Content Include="Assets\quizzler.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The question bank ships with the app and is imported on launch when it changes. -->
+  <ItemGroup>
+    <None Include="..\..\content\**\*.json" Link="content\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
