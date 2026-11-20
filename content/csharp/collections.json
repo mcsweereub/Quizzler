@@ -48,6 +48,117 @@
       "answer": "3\n3",
       "distractors": ["3\n1", "1\n1", "1\n3"],
       "explanation": "`Pop` returns the last item pushed: 3. The trick is `new Queue<int>(stack)`: it *enumerates* the stack, and a stack enumerates in pop order (3, 2, 1). So the queue's first item is 3."
+    },
+    {
+      "id": "cs-collections-0005",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 1,
+      "tags": ["stack", "lifo"],
+      "prompt": "Which built-in collection is last-in, first-out (LIFO)?",
+      "answer": "Stack<T>",
+      "accepted": ["Stack"],
+      "distractors": ["Queue<T>", "List<T>", "LinkedList<T>"],
+      "explanation": "`Stack<T>`: `Push` adds to the top, `Pop` removes the most recently pushed item. `Queue<T>` is first-in, first-out: `Enqueue` at the back, `Dequeue` from the front."
+    },
+    {
+      "id": "cs-collections-0006",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 1,
+      "tags": ["queue", "fifo"],
+      "prompt": "Which built-in collection is first-in, first-out (FIFO)?",
+      "answer": "Queue<T>",
+      "accepted": ["Queue"],
+      "distractors": ["Stack<T>", "PriorityQueue<TElement, TPriority>", "SortedSet<T>"],
+      "explanation": "`Queue<T>` hands items back in the order they were added. `PriorityQueue` dequeues the lowest *priority* first, not the oldest, and `Stack<T>` is LIFO."
+    },
+    {
+      "id": "cs-collections-0007",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["list", "big-o", "insert"],
+      "prompt": "What is the time complexity of inserting an item at the start of a `List<T>` holding n items?",
+      "answer": "O(n)",
+      "accepted": ["linear"],
+      "distractors": ["O(1)", "O(log n)", "Amortised O(1)"],
+      "explanation": "`List<T>` is backed by an array, so `Insert(0, x)` shifts every existing element along by one: O(n). Adding at the *end* is amortised O(1). If you need cheap inserts at both ends, use `LinkedList<T>` or a deque-style structure."
+    },
+    {
+      "id": "cs-collections-0008",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["list", "big-o", "amortised"],
+      "prompt": "What is the amortised time complexity of `List<T>.Add`?",
+      "answer": "O(1)",
+      "accepted": ["constant", "amortised O(1)", "amortized O(1)"],
+      "distractors": ["O(n)", "O(log n)", "O(n log n)"],
+      "explanation": "When the backing array is full, `Add` allocates one twice the size and copies (O(n)), but doubling makes that rare enough that the average cost per `Add` is O(1). Pass a capacity to the constructor if you know the size up front."
+    },
+    {
+      "id": "cs-collections-0009",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 3,
+      "tags": ["sorteddictionary", "big-o", "trees"],
+      "prompt": "What is the time complexity of looking up a key in a `SortedDictionary<TKey, TValue>`?",
+      "answer": "O(log n)",
+      "accepted": ["logarithmic"],
+      "distractors": ["O(1)", "O(n)", "O(n log n)"],
+      "explanation": "`SortedDictionary` is a balanced binary search tree (red-black), so lookups, inserts and removes are O(log n), and it enumerates in key order. `Dictionary` is a hash table: O(1) on average, but no ordering."
+    },
+    {
+      "id": "cs-collections-0010",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["ilist", "icollection", "interfaces"],
+      "prompt": "Which interface adds index-based access (`this[int]`, `Insert`, `IndexOf`) on top of `ICollection<T>`?",
+      "answer": "IList<T>",
+      "accepted": ["IList"],
+      "distractors": ["IEnumerable<T>", "IReadOnlyCollection<T>", "IDictionary<TKey, TValue>"],
+      "explanation": "The ladder is `IEnumerable<T>` (iterate) → `ICollection<T>` (Count, Add, Remove, Contains) → `IList<T>` (index access). `IReadOnlyCollection<T>` only adds `Count` to `IEnumerable<T>`."
+    },
+    {
+      "id": "cs-collections-0011",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["ienumerable", "icollection", "ilist", "interfaces"],
+      "prompt": "What does each of `IEnumerable<T>`, `ICollection<T>` and `IList<T>` add over the one before it?",
+      "answer": "IEnumerable<T>: iterate only. ICollection<T>: adds Count, Add, Remove, Contains, Clear. IList<T>: adds index access (this[i], Insert, IndexOf, RemoveAt).",
+      "distractors": [
+        "IEnumerable<T> adds Count; ICollection<T> adds indexing; IList<T> adds sorting.",
+        "They're interchangeable; IList<T> is just the newest name.",
+        "IList<T> is read-only; ICollection<T> adds the ability to modify it."
+      ],
+      "recall": "self",
+      "explanation": "Accept the least capable interface you need as a parameter (often `IEnumerable<T>` or `IReadOnlyList<T>`) and return the most useful concrete type. Asking for `IList<T>` when you only iterate rules out callers with a plain sequence."
+    },
+    {
+      "id": "cs-collections-0012",
+      "type": "concept",
+      "topic": "csharp/collections",
+      "difficulty": 1,
+      "tags": ["arrays", "list"],
+      "prompt": "Can you change the length of an existing array (e.g. an `int[]`) after it's created?",
+      "answer": "No",
+      "distractors": ["Yes", "Only by calling Add", "Only if it was declared with var"],
+      "explanation": "Arrays have a fixed length. `Array.Resize` looks like it resizes, but it allocates a *new* array, copies the elements and updates your variable. Use `List<T>` when the size needs to change."
+    },
+    {
+      "id": "cs-collections-0013",
+      "type": "predict-output",
+      "topic": "csharp/collections",
+      "difficulty": 2,
+      "tags": ["dictionary", "indexer", "trygetvalue"],
+      "prompt": "What does this program print?",
+      "code": "var ages = new Dictionary<string, int> { [\"Ada\"] = 36 };\nages[\"Ada\"] = 37;\nConsole.WriteLine(ages[\"Ada\"]);\nConsole.WriteLine(ages.TryGetValue(\"Bob\", out var bob) ? bob : -1);\ntry\n{\n    ages.Add(\"Ada\", 40);\n}\ncatch (ArgumentException)\n{\n    Console.WriteLine(\"Duplicate\");\n}",
+      "answer": "37\n-1\nDuplicate",
+      "distractors": ["36\n-1\nDuplicate", "37\n0\nDuplicate", "Duplicate\n-1\nDuplicate"],
+      "explanation": "Setting via the indexer adds *or overwrites*, so Ada becomes 37 with no error. `TryGetValue` returns false for a missing key (no exception), so -1 is printed. `Add` refuses an existing key and throws `ArgumentException`."
     }
   ]
 }

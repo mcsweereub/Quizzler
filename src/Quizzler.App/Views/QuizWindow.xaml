@@ -143,9 +143,23 @@
                     <TextBlock Margin="0,14,0,0" FontSize="20" TextWrapping="Wrap" LineHeight="28"
                                views:InlineText.Markdown="{Binding Question.Prompt}" />
 
+                    <!-- SQL questions: the setup tables (rows highlighted/dimmed once answered) -->
+                    <ItemsControl Margin="0,14,0,0" ItemsSource="{Binding SqlTables}" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SqlTableItem}">
+                                <views:SqlTableView Table="{Binding Table}" RowMatters="{Binding RowMatters}" Margin="0,0,22,10" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
                     <Border Style="{StaticResource CodeFrame}" Margin="0,14,0,0"
                             Visibility="{Binding Question.HasCode, Converter={StaticResource BoolToVis}}">
-                        <views:CodeViewer Code="{Binding Question.Code}" />
+                        <views:CodeViewer Code="{Binding Question.Code}" Syntax="{Binding Question.CodeSyntax}" />
                     </Border>
 
                     <!-- Multiple choice -->
@@ -220,6 +234,11 @@
                                     Visibility="{Binding Feedback.ShowAnswerAsCode, Converter={StaticResource BoolToVis}}">
                                 <views:CodeViewer Code="{Binding Feedback.Answer}" />
                             </Border>
+                        </StackPanel>
+                        <StackPanel Margin="0,12,0,0" Visibility="{Binding Feedback.HasSqlResult, Converter={StaticResource BoolToVis}}">
+                            <views:SqlTableView Table="{Binding Feedback.SqlResult}" Caption="{Binding Feedback.SqlResultCaption}" />
+                            <TextBlock Margin="0,8,0,0" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="In the tables above, highlighted rows affect the result: deleting any one of them would change it. Dimmed rows could be deleted without changing it." />
                         </StackPanel>
                         <TextBlock Margin="0,12,0,0" FontSize="14" LineHeight="21" TextWrapping="Wrap"
                                    views:InlineText.Markdown="{Binding Feedback.Explanation}" />

@@ -26,9 +26,10 @@ internal static class ContentCheck
             $"Loaded [bold]{load.Questions.Count}[/] questions " +
             $"([grey]{byType.GetValueOrDefault(QuestionType.Concept)} concept, " +
             $"{byType.GetValueOrDefault(QuestionType.PredictOutput)} predict-output, " +
-            $"{byType.GetValueOrDefault(QuestionType.PickTheCode)} pick-the-code[/])");
+            $"{byType.GetValueOrDefault(QuestionType.PickTheCode)} pick-the-code, " +
+            $"{byType.GetValueOrDefault(QuestionType.PredictResult)} predict-result[/])");
 
-        var toRun = byType.GetValueOrDefault(QuestionType.PredictOutput);
+        var toRun = load.Questions.Count(q => ContentVerifier.IsRunnable(q.Question));
         if (!settings.NoRun && toRun > 0)
         {
             var verifyIssues = await AnsiConsole.Progress()

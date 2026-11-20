@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-generics-0001",
+      "type": "concept",
+      "topic": "csharp/generics",
+      "difficulty": 2,
+      "tags": ["generics", "constraints"],
+      "prompt": "Which generic constraint requires a type argument to have a public parameterless constructor, so you can write `new T()`?",
+      "answer": "new()",
+      "accepted": ["where T : new()"],
+      "distractors": ["class", "struct", "notnull"],
+      "explanation": "`where T : new()` allows `new T()`. If combined with other constraints, it must come last. `struct` types always have a parameterless constructor, which is why `where T : struct` implies it."
+    },
+    {
+      "id": "cs-generics-0002",
+      "type": "concept",
+      "topic": "csharp/generics",
+      "difficulty": 2,
+      "tags": ["generics", "constraints"],
+      "prompt": "Which generic constraint restricts a type parameter to reference types?",
+      "answer": "class",
+      "accepted": ["where T : class"],
+      "distractors": ["struct", "notnull", "unmanaged"],
+      "explanation": "`where T : class` = any reference type (class, interface, delegate, array). `struct` = non-nullable value types. `notnull` allows both but excludes nullable types. `unmanaged` = value types with no references inside."
+    },
+    {
+      "id": "cs-generics-0003",
+      "type": "concept",
+      "topic": "csharp/generics",
+      "difficulty": 2,
+      "tags": ["generics", "boxing", "performance"],
+      "prompt": "What runtime cost does `List<int>` avoid compared with the non-generic `ArrayList` when storing integers?",
+      "answer": "Boxing",
+      "accepted": ["boxing and unboxing", "avoids boxing"],
+      "distractors": ["Bounds checking", "Virtual method calls", "Garbage collection entirely"],
+      "explanation": "`ArrayList` stores `object`, so every `int` is boxed into its own heap object on the way in and unboxed (with a type check) on the way out. `List<int>` stores the ints directly in an `int[]`. It also gives compile-time type safety."
+    },
+    {
+      "id": "cs-generics-0004",
+      "type": "concept",
+      "topic": "csharp/generics",
+      "difficulty": 4,
+      "tags": ["generics", "variance", "covariance"],
+      "prompt": "Which keyword marks a generic interface's type parameter as covariant, as in `IEnumerable<T>`?",
+      "answer": "out",
+      "distractors": ["in", "ref", "params"],
+      "explanation": "`IEnumerable<out T>` only *returns* T, so an `IEnumerable<string>` can safely be used as an `IEnumerable<object>`. `in` marks contravariance (T only accepted, as in `IComparer<in T>`)."
+    },
+    {
+      "id": "cs-generics-0005",
+      "type": "predict-output",
+      "topic": "csharp/generics",
+      "difficulty": 3,
+      "tags": ["generics", "variance", "covariance"],
+      "prompt": "What does this program print?",
+      "code": "IEnumerable<string> strings = new List<string> { \"a\", \"b\" };\nIEnumerable<object> objects = strings;\nConsole.WriteLine(objects.Count());",
+      "answer": "2",
+      "distractors": ["Compile error", "Throws InvalidCastException", "0"],
+      "explanation": "`IEnumerable<out T>` is covariant, so the assignment compiles and no conversion happens: it's the same list. `List<object> objects = new List<string>()` would *not* compile, because `List<T>` lets you add, and adding an `int` to a list of strings would be unsafe."
+    },
+    {
+      "id": "cs-generics-0006",
+      "type": "predict-output",
+      "topic": "csharp/generics",
+      "difficulty": 4,
+      "tags": ["generics", "static-fields"],
+      "prompt": "What does this program print?",
+      "code": "Counter<int>.Count++;\nCounter<int>.Count++;\nCounter<string>.Count++;\nConsole.WriteLine(Counter<int>.Count);\nConsole.WriteLine(Counter<string>.Count);\n\nstatic class Counter<T>\n{\n    public static int Count;\n}",
+      "answer": "2\n1",
+      "distractors": ["3\n3", "2\n2", "3\n1"],
+      "explanation": "Each closed generic type (`Counter<int>`, `Counter<string>`) is a separate type with its own static fields. This is sometimes used deliberately as a fast per-type cache."
+    },
+    {
+      "id": "cs-generics-0007",
+      "type": "concept",
+      "topic": "csharp/generics",
+      "difficulty": 2,
+      "tags": ["generics", "default"],
+      "prompt": "What does `default(T)` evaluate to when T is a reference type?",
+      "answer": "null",
+      "distractors": ["A new instance of T", "It throws an exception", "0"],
+      "explanation": "`default(T)` is all-bits-zero: `null` for reference types, `0` for numbers, `false` for `bool`, and a zeroed struct for other value types. It never calls a constructor."
+    }
+  ]
+}

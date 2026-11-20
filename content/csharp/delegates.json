@@ -1,0 +1,80 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-delegates-0001",
+      "type": "concept",
+      "topic": "csharp/delegates",
+      "difficulty": 1,
+      "tags": ["delegates", "action", "func"],
+      "prompt": "Which built-in generic delegate type represents a method that returns void?",
+      "answer": "Action",
+      "accepted": ["Action<T>"],
+      "distractors": ["Func", "Predicate", "EventHandler"],
+      "explanation": "`Action`, `Action<T>`, `Action<T1, T2>`... return void. `Func<..., TResult>` returns a value (its *last* type argument). `Predicate<T>` is an older equivalent of `Func<T, bool>`."
+    },
+    {
+      "id": "cs-delegates-0002",
+      "type": "concept",
+      "topic": "csharp/delegates",
+      "difficulty": 2,
+      "tags": ["delegates", "func"],
+      "prompt": "In `Func<int, string>`, which type is the return type?",
+      "answer": "string",
+      "distractors": ["int", "Both, as a tuple", "Neither; Func returns void"],
+      "explanation": "In `Func`, the last type argument is always the return type and the rest are parameters: `Func<int, string>` takes an `int` and returns a `string`."
+    },
+    {
+      "id": "cs-delegates-0003",
+      "type": "concept",
+      "topic": "csharp/delegates",
+      "difficulty": 3,
+      "tags": ["delegates", "events", "encapsulation"],
+      "prompt": "What does the `event` keyword on a delegate field stop code outside the class from doing?",
+      "answer": "Invoking it or replacing it with =; outside code can only subscribe (+=) and unsubscribe (-=).",
+      "distractors": [
+        "Subscribing to it with +=.",
+        "Reading it at all; events are completely private.",
+        "Subscribing more than one handler."
+      ],
+      "recall": "self",
+      "explanation": "With a public delegate field, any caller could raise it or wipe out every subscriber with `x.Changed = null`. `event` encapsulates it: only the declaring class can raise it or reassign it."
+    },
+    {
+      "id": "cs-delegates-0004",
+      "type": "predict-output",
+      "topic": "csharp/delegates",
+      "difficulty": 3,
+      "tags": ["closures", "lambdas", "loop-variable"],
+      "prompt": "What does this program print?",
+      "code": "var actions = new List<Action>();\nfor (int i = 0; i < 3; i++)\n    actions.Add(() => Console.Write(i));\nforeach (var n in new[] { 0, 1, 2 })\n    actions.Add(() => Console.Write(n));\n\nforeach (var a in actions.Take(3)) a();\nConsole.WriteLine();\nforeach (var a in actions.Skip(3)) a();\nConsole.WriteLine();",
+      "answer": "333\n012",
+      "distractors": ["012\n012", "333\n222", "222\n012"],
+      "explanation": "Lambdas capture *variables*, not values. A `for` loop has one `i` shared by every iteration, and it's 3 when the lambdas run. Since C# 5, `foreach` declares a fresh `n` per iteration, so each lambda sees its own value."
+    },
+    {
+      "id": "cs-delegates-0005",
+      "type": "predict-output",
+      "topic": "csharp/delegates",
+      "difficulty": 3,
+      "tags": ["delegates", "multicast"],
+      "prompt": "What does this program print?",
+      "code": "Action greet = () => Console.WriteLine(\"Hello\");\ngreet += () => Console.WriteLine(\"World\");\ngreet();\n\nFunc<int> f = () => 1;\nf += () => 2;\nConsole.WriteLine(f());",
+      "answer": "Hello\nWorld\n2",
+      "distractors": ["World\n2", "Hello\nWorld\n1", "Hello\nWorld\n3"],
+      "explanation": "`+=` makes a multicast delegate that calls every handler in order. For a delegate with a return value, all handlers run but you only get the *last* one's result, so 2 (not 3; nothing is summed)."
+    },
+    {
+      "id": "cs-delegates-0006",
+      "type": "concept",
+      "topic": "csharp/delegates",
+      "difficulty": 2,
+      "tags": ["closures", "lambdas"],
+      "prompt": "What is the term for a lambda that captures local variables from its enclosing method, keeping them alive as long as the lambda is?",
+      "answer": "Closure",
+      "accepted": ["a closure"],
+      "distractors": ["Callback", "Expression tree", "Anonymous type"],
+      "explanation": "The compiler moves captured locals into a hidden class shared by the method and the lambda. That's why a closure sees later changes to the variable, and why capturing in hot paths costs an allocation."
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-exceptions-0001",
+      "type": "concept",
+      "topic": "csharp/exceptions",
+      "difficulty": 2,
+      "tags": ["exceptions", "rethrow", "stack-trace"],
+      "prompt": "Inside a `catch (Exception ex)` block, which statement rethrows the exception while preserving its original stack trace?",
+      "answer": "throw;",
+      "accepted": ["throw"],
+      "distractors": ["throw ex;", "throw ex.InnerException;"],
+      "explanation": "A bare `throw;` rethrows the same exception with its stack trace intact. `throw ex;` resets the trace to the current line, hiding where the error really happened."
+    },
+    {
+      "id": "cs-exceptions-0002",
+      "type": "predict-output",
+      "topic": "csharp/exceptions",
+      "difficulty": 2,
+      "tags": ["exceptions", "finally", "return"],
+      "prompt": "What does this program print?",
+      "code": "Console.WriteLine(Get());\n\nstatic int Get()\n{\n    try\n    {\n        Console.WriteLine(\"try\");\n        return 1;\n    }\n    finally\n    {\n        Console.WriteLine(\"finally\");\n    }\n}",
+      "answer": "try\nfinally\n1",
+      "distractors": ["try\n1", "try\n1\nfinally", "finally\ntry\n1"],
+      "explanation": "`finally` runs whenever control leaves the `try`, including via `return`. It runs before the method actually returns, so \"finally\" prints before the caller prints the result 1."
+    },
+    {
+      "id": "cs-exceptions-0003",
+      "type": "predict-output",
+      "topic": "csharp/exceptions",
+      "difficulty": 4,
+      "tags": ["exceptions", "finally", "return"],
+      "prompt": "What does this program print?",
+      "code": "Console.WriteLine(Get());\n\nstatic int Get()\n{\n    int x = 1;\n    try\n    {\n        return x;\n    }\n    finally\n    {\n        x = 2;\n    }\n}",
+      "answer": "1",
+      "distractors": ["2", "Compile error"],
+      "explanation": "`return x;` evaluates `x` (1) and stores that value *before* the `finally` runs. Changing `x` afterwards doesn't change the stored return value. (C# also forbids `return` inside a `finally`, so it can't override the result.)"
+    },
+    {
+      "id": "cs-exceptions-0004",
+      "type": "predict-output",
+      "topic": "csharp/exceptions",
+      "difficulty": 3,
+      "tags": ["exceptions", "exception-filters", "when"],
+      "prompt": "What does this program print?",
+      "code": "try\n{\n    throw new InvalidOperationException(\"retry\");\n}\ncatch (InvalidOperationException ex) when (ex.Message == \"fatal\")\n{\n    Console.WriteLine(\"fatal\");\n}\ncatch (Exception ex)\n{\n    Console.WriteLine($\"general: {ex.Message}\");\n}",
+      "answer": "general: retry",
+      "distractors": ["fatal", "fatal\ngeneral: retry", "Unhandled InvalidOperationException"],
+      "explanation": "A `when` filter is part of choosing the catch block: if it's false, that block is skipped as if it didn't match, and the next one is tried. At most one catch block runs per exception."
+    },
+    {
+      "id": "cs-exceptions-0005",
+      "type": "concept",
+      "topic": "csharp/exceptions",
+      "difficulty": 1,
+      "tags": ["idisposable", "using"],
+      "prompt": "Which interface must a type implement to be used in a (non-async) `using` statement?",
+      "answer": "IDisposable",
+      "distractors": ["IAsyncDisposable", "ICloneable", "IEnumerable"],
+      "explanation": "`using` calls `Dispose()` in a hidden `finally`, so it needs `IDisposable`. `await using` is the async version and needs `IAsyncDisposable` (`DisposeAsync`)."
+    },
+    {
+      "id": "cs-exceptions-0006",
+      "type": "predict-output",
+      "topic": "csharp/exceptions",
+      "difficulty": 2,
+      "tags": ["idisposable", "using", "dispose-order"],
+      "prompt": "What does this program print?",
+      "code": "using (var a = new Res(\"A\"))\nusing (var b = new Res(\"B\"))\n{\n    Console.WriteLine(\"body\");\n}\n\nclass Res(string name) : IDisposable\n{\n    public void Dispose() => Console.WriteLine($\"dispose {name}\");\n}",
+      "answer": "body\ndispose B\ndispose A",
+      "distractors": ["body\ndispose A\ndispose B", "dispose A\ndispose B\nbody", "body"],
+      "explanation": "Nested `using`s dispose in reverse order of creation, like unwinding a stack: B was created inside A's scope, so it's disposed first. This matters when B depends on A (e.g. a command on a connection)."
+    },
+    {
+      "id": "cs-exceptions-0007",
+      "type": "concept",
+      "topic": "csharp/exceptions",
+      "difficulty": 3,
+      "tags": ["idisposable", "finalizers", "gc"],
+      "prompt": "What is the difference between `Dispose()` and a finalizer?",
+      "answer": "Dispose is called deterministically by your code (usually via using) to release resources now; a finalizer runs non-deterministically on the GC's finalizer thread as a last-resort cleanup for unmanaged resources.",
+      "distractors": [
+        "A finalizer runs as soon as the object goes out of scope; Dispose runs when the GC collects it.",
+        "Dispose frees the object's managed memory; a finalizer frees its unmanaged memory.",
+        "They're the same; ~ClassName() is just syntax for Dispose."
+      ],
+      "recall": "self",
+      "explanation": "Dispose never frees managed memory; only the GC does that. Finalizers delay collection and may never run promptly, so most classes shouldn't have one: wrap unmanaged handles in a `SafeHandle` and just implement `IDisposable`."
+    },
+    {
+      "id": "cs-exceptions-0008",
+      "type": "concept",
+      "topic": "csharp/exceptions",
+      "difficulty": 1,
+      "tags": ["exceptions", "argument-validation"],
+      "prompt": "Which exception should a method throw when a required argument is null?",
+      "answer": "ArgumentNullException",
+      "distractors": ["NullReferenceException", "ArgumentException", "InvalidOperationException"],
+      "explanation": "`ArgumentNullException` (e.g. `ArgumentNullException.ThrowIfNull(order)`) tells the caller exactly which parameter was wrong. `ArgumentException` is its more general base class. `NullReferenceException` is what the runtime throws when you dereference null; you shouldn't throw it yourself."
+    },
+    {
+      "id": "cs-exceptions-0009",
+      "type": "concept",
+      "topic": "csharp/exceptions",
+      "difficulty": 2,
+      "tags": ["exceptions", "object-state"],
+      "prompt": "Which exception signals that a call isn't valid in the object's current state (e.g. `MoveNext` after the collection was modified)?",
+      "answer": "InvalidOperationException",
+      "distractors": ["ArgumentException", "NotSupportedException", "InvalidCastException"],
+      "explanation": "Use `InvalidOperationException` when the arguments are fine but the *state* is wrong (not connected yet, already disposed-ish, sequence empty for `First()`). `NotSupportedException` means the operation is never supported, e.g. `Add` on a read-only collection."
+    }
+  ]
+}

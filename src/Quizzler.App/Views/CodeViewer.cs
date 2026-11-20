@@ -23,10 +23,20 @@ public sealed class CodeViewer : TextEditor
         set => SetValue(CodeProperty, value);
     }
 
+    public static readonly DependencyProperty SyntaxProperty = DependencyProperty.Register(
+        nameof(Syntax), typeof(CodeLanguage), typeof(CodeViewer),
+        new PropertyMetadata(CodeLanguage.CSharp, (d, _) => ((CodeViewer)d).OnThemeChanged(null, EventArgs.Empty)));
+
+    public CodeLanguage Syntax
+    {
+        get => (CodeLanguage)GetValue(SyntaxProperty);
+        set => SetValue(SyntaxProperty, value);
+    }
+
     public CodeViewer()
     {
         IsReadOnly = true;
-        SyntaxHighlighting = CodeHighlighting.Current;
+        SyntaxHighlighting = CodeHighlighting.For(CodeLanguage.CSharp);
         FontFamily = (FontFamily)Application.Current.FindResource("CodeFont");
         FontSize = 14;
         ShowLineNumbers = false;
@@ -47,8 +57,9 @@ public sealed class CodeViewer : TextEditor
 
     private void OnThemeChanged(object? sender, EventArgs e)
     {
-        if (!ReferenceEquals(SyntaxHighlighting, CodeHighlighting.Current))
-            SyntaxHighlighting = CodeHighlighting.Current;
+        var wanted = CodeHighlighting.For(Syntax);
+        if (!ReferenceEquals(SyntaxHighlighting, wanted))
+            SyntaxHighlighting = wanted;
     }
 
     /// <summary>The editor would swallow the mouse wheel; pass it to the page's ScrollViewer instead.</summary>

@@ -40,6 +40,24 @@ public sealed class QuizDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Import_round_trips_sql_question_fields()
+    {
+        var q = Q("t-0001") with
+        {
+            Type = QuestionType.PredictResult,
+            Setup = "CREATE TABLE T (X INTEGER);",
+            Code = "SELECT * FROM T;",
+            Expect = ResultExpectation.RowCount,
+        };
+        _db.ImportQuestions(Loaded(q), Now);
+        var back = _db.GetQuestion("t-0001")!;
+        Assert.Equal(QuestionType.PredictResult, back.Type);
+        Assert.Equal(q.Setup, back.Setup);
+        Assert.Equal(q.Code, back.Code);
+        Assert.Equal(ResultExpectation.RowCount, back.Expect);
+    }
+
+    [Fact]
     public void Import_round_trips_every_question_field()
     {
         var q = Q("t-0001") with { Type = QuestionType.PredictOutput, Code = "Console.Write(1);", Recall = RecallGrading.Self };

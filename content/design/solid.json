@@ -24,6 +24,58 @@
       "accepted": ["dependency inversion", "dip"],
       "distractors": ["Dependency Injection", "Interface Segregation Principle", "Liskov Substitution Principle", "Open/Closed Principle"],
       "explanation": "Dependency Inversion is the principle (depend on `IOrderRepository`, not `SqlOrderRepository`). Dependency *Injection* is a technique for achieving it, by passing dependencies in via constructors, but it is not one of the SOLID letters."
+    },
+    {
+      "id": "design-solid-0003",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 2,
+      "tags": ["solid", "srp"],
+      "prompt": "Which SOLID principle says a class should have only one reason to change?",
+      "answer": "Single Responsibility Principle",
+      "accepted": ["single responsibility", "srp"],
+      "distractors": ["Interface Segregation Principle", "Open/Closed Principle", "Dependency Inversion Principle"],
+      "explanation": "SRP: an `InvoiceService` that also formats PDFs and sends emails changes whenever tax rules, layout *or* email providers change. Splitting by reason-to-change keeps each change local. Interface Segregation is the similar-sounding idea applied to interfaces and their clients."
+    },
+    {
+      "id": "design-solid-0004",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 2,
+      "tags": ["solid", "ocp"],
+      "prompt": "Which SOLID principle says you should be able to add new behaviour by adding code (a new subclass or strategy) rather than editing existing, tested code?",
+      "answer": "Open/Closed Principle",
+      "accepted": ["open closed principle", "open-closed principle", "open/closed", "open closed", "ocp"],
+      "distractors": ["Liskov Substitution Principle", "Single Responsibility Principle", "Dependency Inversion Principle"],
+      "explanation": "Open for extension, closed for modification. A `switch` on payment type that grows a case for every new provider violates it; an `IPaymentProvider` with one class per provider follows it."
+    },
+    {
+      "id": "design-solid-0005",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 2,
+      "tags": ["solid", "isp"],
+      "prompt": "Which SOLID principle says clients shouldn't be forced to depend on methods they don't use, so large interfaces should be split?",
+      "answer": "Interface Segregation Principle",
+      "accepted": ["interface segregation", "isp"],
+      "distractors": ["Single Responsibility Principle", "Liskov Substitution Principle", "Dependency Inversion Principle"],
+      "explanation": "A `IMachine` with `Print`, `Scan` and `Fax` forces a simple printer to stub out `Fax` (often with `NotImplementedException`, which also smells of an LSP violation). Split it into `IPrinter`, `IScanner`, `IFax`."
+    },
+    {
+      "id": "design-solid-0006",
+      "type": "concept",
+      "topic": "design/solid",
+      "difficulty": 3,
+      "tags": ["solid", "dip", "dependency-injection"],
+      "prompt": "What is the difference between Dependency Inversion and Dependency Injection?",
+      "answer": "Dependency Inversion is a principle (high-level code depends on abstractions, not concrete classes); Dependency Injection is a technique (supplying dependencies from outside, e.g. via the constructor) that's one way to achieve it.",
+      "distractors": [
+        "They're the same thing; injection is just the newer name.",
+        "Dependency Injection is the principle; Dependency Inversion is the container that implements it.",
+        "Dependency Inversion means passing dependencies through constructors; Dependency Injection means using interfaces."
+      ],
+      "recall": "self",
+      "explanation": "You can inject a concrete `SqlRepository` (injection without inversion), or depend on `IRepository` but `new` it up via a factory (inversion without a DI container). The two are usually used together, which is why they get confused."
     }
   ]
 }

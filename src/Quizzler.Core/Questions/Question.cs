@@ -10,6 +10,22 @@ public enum QuestionType
 
     /// <summary>The answer and distractors are code snippets; pick the one that solves the prompt.</summary>
     PickTheCode,
+
+    /// <summary>
+    /// SQL: <see cref="Question.Setup"/> builds small tables, <see cref="Question.Code"/> is a query, and the answer is
+    /// its result (rows, or the row count when <see cref="Question.Expect"/> is <see cref="ResultExpectation.RowCount"/>).
+    /// </summary>
+    PredictResult,
+}
+
+/// <summary>What a predict-result answer describes.</summary>
+public enum ResultExpectation
+{
+    /// <summary>The result rows: one per line, values separated by commas.</summary>
+    Rows,
+
+    /// <summary>Just the number of rows returned.</summary>
+    RowCount,
 }
 
 /// <summary>How a typed (recall-stage) answer is graded.</summary>
@@ -43,8 +59,16 @@ public sealed record Question
 
     public string Prompt { get; init; } = "";
 
-    /// <summary>Optional code shown with the prompt. Required for <see cref="QuestionType.PredictOutput"/>.</summary>
+    /// <summary>Optional code shown with the prompt: C#, or the SQL query for predict-result. Required for predict-output and predict-result.</summary>
     public string? Code { get; init; }
+
+    /// <summary>predict-result only: SQL that creates and fills the tables the query runs against.</summary>
+    public string? Setup { get; init; }
+
+    /// <summary>predict-result only: whether the answer is the rows (default) or the row count.</summary>
+    public ResultExpectation? Expect { get; init; }
+
+    public ResultExpectation EffectiveExpect => Expect ?? ResultExpectation.Rows;
 
     /// <summary>The canonical correct answer. Shown as the right option in multiple-choice mode.</summary>
     public string Answer { get; init; } = "";

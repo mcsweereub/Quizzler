@@ -25,10 +25,30 @@ public static partial class AnswerChecker
     }
 
     /// <summary>True when <paramref name="candidate"/> should be accepted as <paramref name="expected"/>.</summary>
-    public static bool Matches(QuestionType type, string expected, string candidate) =>
-        type == QuestionType.PredictOutput
-            ? NormalizeOutput(expected) == NormalizeOutput(candidate)
-            : NormalizeText(expected) == NormalizeText(candidate);
+    public static bool Matches(QuestionType type, string expected, string candidate) => type switch
+    {
+        QuestionType.PredictOutput => NormalizeOutput(expected) == NormalizeOutput(candidate),
+        QuestionType.PredictResult => NormalizeResult(expected) == NormalizeResult(candidate),
+        _ => NormalizeText(expected) == NormalizeText(candidate),
+    };
+
+    /// <summary>
+    /// SQL result comparison: one row per line, values separated by commas (or |). Case-insensitive,
+    /// ignores spacing around values, quotes around a value ('Ada' = Ada), and blank lines.
+    /// </summary>
+    public static string NormalizeResult(string s)
+    {
+        var rows = s.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n')
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => string.Join(", ", line.Split(',', '|').Select(NormalizeCell)));
+        return string.Join('\n', rows);
+
+        static string NormalizeCell(string cell)
+        {
+            var c = Whitespace().Replace(cell.Trim(), " ").ToLowerInvariant();
+            return c.Length >= 2 && c[0] == c[^1] && c[0] is '\'' or '"' ? c[1..^1] : c;
+        }
+    }
 
     /// <summary>
     /// Program output comparison: case-sensitive (True vs true matters in C#), but forgiving about

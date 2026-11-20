@@ -74,6 +74,92 @@
       "answer": "SelectMany",
       "distractors": ["Select", "Concat", "Aggregate", "Zip"],
       "explanation": "`customers.SelectMany(c => c.Orders)` yields every order from every customer in one flat sequence. `Select(c => c.Orders)` would give you a sequence of lists instead."
+    },
+    {
+      "id": "cs-linq-0007",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "iqueryable", "ef-core"],
+      "prompt": "Which interface represents a LINQ query as an expression tree that a provider like EF Core translates (e.g. into SQL)?",
+      "answer": "IQueryable<T>",
+      "accepted": ["IQueryable"],
+      "distractors": ["IEnumerable<T>", "IList<T>", "IObservable<T>"],
+      "explanation": "`IQueryable<T>` carries an `Expression` plus a provider that turns it into SQL (or another query language). `IEnumerable<T>` LINQ runs in memory with ordinary delegates."
+    },
+    {
+      "id": "cs-linq-0008",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "iqueryable", "ienumerable", "ef-core"],
+      "prompt": "What is the difference between `IEnumerable<T>` and `IQueryable<T>` when querying a database?",
+      "answer": "IEnumerable runs LINQ operators in memory as compiled delegates over data already in the app; IQueryable builds an expression tree the provider translates and runs in the database.",
+      "distractors": [
+        "IQueryable runs in memory; IEnumerable is translated to SQL.",
+        "IEnumerable is lazy; IQueryable always executes immediately.",
+        "There's no difference; IQueryable is just an alias for IEnumerable."
+      ],
+      "recall": "self",
+      "explanation": "Both are deferred. The classic bug: calling `.AsEnumerable()` or `.ToList()` too early, or passing an `IEnumerable` into a method, so a later `.Where` filters millions of rows in memory instead of in a SQL `WHERE` clause."
+    },
+    {
+      "id": "cs-linq-0009",
+      "type": "predict-output",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "first", "single", "firstordefault"],
+      "prompt": "What does this program print?",
+      "code": "var nums = new List<int> { 1, 2, 2, 3 };\nConsole.WriteLine(nums.First(n => n == 2));\nConsole.WriteLine(nums.FirstOrDefault(n => n > 5));\ntry\n{\n    Console.WriteLine(nums.Single(n => n == 2));\n}\ncatch (InvalidOperationException)\n{\n    Console.WriteLine(\"Exception\");\n}",
+      "answer": "2\n0\nException",
+      "distractors": ["2\nException\nException", "2\n0\n2", "2\nnull\nException"],
+      "explanation": "`First` returns the first match. `FirstOrDefault` returns `default(int)` = 0 when nothing matches. `Single` demands *exactly one* match, and there are two 2s, so it throws `InvalidOperationException`."
+    },
+    {
+      "id": "cs-linq-0010",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "single", "first"],
+      "prompt": "Which LINQ method returns the only element matching a condition, and throws if there are zero matches or more than one?",
+      "answer": "Single",
+      "distractors": ["First", "SingleOrDefault", "FirstOrDefault"],
+      "explanation": "`Single`: exactly one, else throw. `SingleOrDefault`: zero gives default, but more than one still throws. `First` throws only on zero; `FirstOrDefault` never throws for a missing match. Use `Single` when duplicates would mean a bug."
+    },
+    {
+      "id": "cs-linq-0011",
+      "type": "predict-output",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "yield", "deferred-execution", "streaming"],
+      "prompt": "What does this program print?",
+      "code": "foreach (var n in Numbers().Where(n => n % 2 == 1))\n    Console.WriteLine($\"got {n}\");\n\nstatic IEnumerable<int> Numbers()\n{\n    for (int i = 1; i <= 3; i++)\n    {\n        Console.WriteLine($\"yield {i}\");\n        yield return i;\n    }\n}",
+      "answer": "yield 1\ngot 1\nyield 2\nyield 3\ngot 3",
+      "distractors": ["yield 1\nyield 2\nyield 3\ngot 1\ngot 3", "yield 1\ngot 1\nyield 3\ngot 3", "got 1\ngot 3"],
+      "explanation": "Iterators and `Where` *stream*: each element flows through the whole pipeline before the next is produced. 1 is yielded and passes the filter; 2 is yielded and rejected; 3 is yielded and passes. Nothing is buffered unless an operator like `OrderBy` or `ToList` needs it."
+    },
+    {
+      "id": "cs-linq-0012",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 2,
+      "tags": ["linq", "any", "performance"],
+      "prompt": "Which LINQ method checks whether a sequence has at least one element, stopping as soon as it finds one?",
+      "answer": "Any",
+      "distractors": ["Count", "First", "Contains"],
+      "explanation": "`Any()` stops after the first element. `Count() > 0` may enumerate the whole sequence (or run a `COUNT(*)` in SQL). `First()` throws on an empty sequence, and `Contains` looks for a specific value."
+    },
+    {
+      "id": "cs-linq-0013",
+      "type": "concept",
+      "topic": "csharp/linq",
+      "difficulty": 3,
+      "tags": ["linq", "expression-trees", "iqueryable"],
+      "prompt": "When a lambda is passed to `IQueryable<T>.Where`, what does the compiler turn it into so the provider can inspect it rather than run it?",
+      "answer": "Expression tree",
+      "accepted": ["an expression tree", "Expression<Func<T, bool>>", "expression"],
+      "distractors": ["Delegate", "Anonymous class", "Compiled SQL string"],
+      "explanation": "`Queryable.Where` takes `Expression<Func<T, bool>>`, so the compiler builds a data structure describing the lambda, which EF walks to produce SQL. `Enumerable.Where` takes `Func<T, bool>`, so the same lambda becomes an ordinary delegate."
     }
   ]
 }

@@ -62,6 +62,83 @@
       "accepted": ["ConfigureAwait", ".ConfigureAwait(false)"],
       "distractors": ["Task.Run", "ContinueWith", "Task.Yield", "GetAwaiter"],
       "explanation": "`await task.ConfigureAwait(false)` lets the continuation run on any thread-pool thread instead of marshalling back to the original context (e.g. the UI thread). It avoids needless context switches and the classic sync-over-async deadlock in library code. ASP.NET Core has no synchronization context, so it matters less there."
+    },
+    {
+      "id": "cs-async-0006",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 2,
+      "tags": ["async", "await", "threads"],
+      "prompt": "Does `await` by itself start a new thread?",
+      "answer": "No",
+      "distractors": ["Yes, always on a thread-pool thread", "Yes, unless ConfigureAwait(false) is used", "Only for CPU-bound work"],
+      "explanation": "`await` just pauses the method until the task completes and schedules the rest as a continuation. For I/O there's often *no* thread waiting at all. A new thread-pool work item only appears if something like `Task.Run` created one."
+    },
+    {
+      "id": "cs-async-0007",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 2,
+      "tags": ["concurrency", "parallelism", "async"],
+      "prompt": "What is the difference between concurrency and parallelism?",
+      "answer": "Concurrency is several tasks in progress over overlapping time (they may interleave on one thread, like async I/O); parallelism is several literally running at the same instant on multiple cores.",
+      "distractors": [
+        "They're the same thing.",
+        "Parallelism is for I/O-bound work; concurrency is for CPU-bound work.",
+        "Concurrency needs multiple threads; parallelism can happen on one thread."
+      ],
+      "recall": "self",
+      "explanation": "Parallelism is one way to be concurrent. Async/await gives concurrency for I/O-bound work (many requests in flight, few threads); `Parallel.For` and PLINQ give parallelism for CPU-bound work."
+    },
+    {
+      "id": "cs-async-0008",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 2,
+      "tags": ["async", "task-run", "cpu-bound"],
+      "prompt": "Which method queues CPU-bound work to the thread pool and returns a Task, e.g. to keep a UI thread responsive?",
+      "answer": "Task.Run",
+      "distractors": ["Task.Delay", "Task.Yield", "Task.FromResult"],
+      "explanation": "`await Task.Run(() => Crunch())` moves the work off the UI thread. Don't wrap I/O in `Task.Run`: truly async I/O methods already don't block a thread. `Task.FromResult` wraps an existing value; `Task.Yield` just reschedules the continuation."
+    },
+    {
+      "id": "cs-async-0009",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 3,
+      "tags": ["async", "async-void", "exceptions"],
+      "prompt": "Why should you avoid `async void` methods (outside event handlers)?",
+      "answer": "The caller can't await them or catch their exceptions; an exception is rethrown on the synchronization context and usually crashes the process.",
+      "distractors": [
+        "They run synchronously and block the caller.",
+        "They can't contain await expressions.",
+        "Their exceptions are silently swallowed."
+      ],
+      "recall": "self",
+      "explanation": "An `async Task` method stores its exception in the Task for the awaiter. An `async void` method has nowhere to put it, so it's raised directly on the context (or the thread pool) and takes down the app. 'Silently swallowed' is closer to an un-awaited `async Task`."
+    },
+    {
+      "id": "cs-async-0010",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 4,
+      "tags": ["async", "valuetask", "performance"],
+      "prompt": "Which type is a lighter alternative to `Task<T>` that avoids a heap allocation when the result is usually available synchronously?",
+      "answer": "ValueTask<T>",
+      "accepted": ["ValueTask"],
+      "distractors": ["TaskCompletionSource<T>", "Lazy<T>", "IAsyncResult"],
+      "explanation": "`ValueTask<T>` is a struct that can hold a ready result directly, so a cached hit costs no allocation. The trade-off: await it exactly once and don't await it concurrently. Default to `Task<T>` unless profiling says otherwise."
+    },
+    {
+      "id": "cs-async-0011",
+      "type": "concept",
+      "topic": "csharp/async",
+      "difficulty": 2,
+      "tags": ["async", "cancellation"],
+      "prompt": "Which type do you pass into an async method so the caller can ask it to stop early?",
+      "answer": "CancellationToken",
+      "distractors": ["CancellationTokenSource", "SemaphoreSlim", "TaskCompletionSource"],
+      "explanation": "The caller owns a `CancellationTokenSource` (which can `Cancel()`), and passes its `Token` down. Methods receive only the token, so they can observe cancellation but not trigger it. Pass it on to every async call you make."
     }
   ]
 }

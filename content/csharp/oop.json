@@ -62,6 +62,248 @@
       ],
       "recall": "self",
       "explanation": "Since C# 8, interfaces *can* have default method implementations (and static members), so 'no method bodies' is outdated. The lasting differences: abstract classes can have instance fields and constructors and use single inheritance; interfaces can't hold instance state, and a class can implement many of them."
+    },
+    {
+      "id": "cs-oop-0006",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["interfaces", "fields", "abstract-classes"],
+      "prompt": "Can an interface declare instance fields in C#?",
+      "answer": "No",
+      "distractors": ["Yes", "Only private fields", "Only since C# 8"],
+      "explanation": "Interfaces can never hold instance state. Since C# 8 they can have *static* fields and default method bodies, but per-object data needs a class (often an abstract base class). That is the most durable difference between the two."
+    },
+    {
+      "id": "cs-oop-0007",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["abstract-classes", "constructors"],
+      "prompt": "Can an abstract class have a constructor?",
+      "answer": "Yes",
+      "distractors": ["No", "Only a static constructor", "Only if it has no abstract members"],
+      "explanation": "You can't `new` an abstract class directly, but derived classes call its constructor (via `: base(...)`) to initialise the shared state. Such constructors are usually `protected`. Interfaces can't have instance constructors at all."
+    },
+    {
+      "id": "cs-oop-0008",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["interfaces", "default-interface-methods", "language-versions"],
+      "prompt": "Since which C# version can interface members have a default implementation (a method body)?",
+      "answer": "C# 8",
+      "accepted": ["8", "C#8", "C# 8.0", "8.0"],
+      "distractors": ["C# 6", "C# 10", "C# 11"],
+      "explanation": "Default interface methods arrived in C# 8 (.NET Core 3.0) so library authors could add members to published interfaces without breaking implementers. C# 11 added *static abstract* interface members, which is a different feature."
+    },
+    {
+      "id": "cs-oop-0009",
+      "type": "predict-output",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["interfaces", "default-interface-methods"],
+      "prompt": "What does this program print?",
+      "code": "IGreeter a = new Robot();\nIGreeter b = new Person();\na.Greet();\nb.Greet();\n\ninterface IGreeter\n{\n    void Greet() => Console.WriteLine(\"Default hello\");\n}\n\nclass Robot : IGreeter { }\n\nclass Person : IGreeter\n{\n    public void Greet() => Console.WriteLine(\"Person hello\");\n}",
+      "answer": "Default hello\nPerson hello",
+      "distractors": ["Compile error", "Default hello\nDefault hello", "Throws NotImplementedException"],
+      "explanation": "`Robot` doesn't implement `Greet`, so the interface's default body is used. `Person`'s public `Greet` implements the interface member (no `override` needed), so it wins. Note a default method is only reachable through the interface: `new Robot().Greet()` would not compile."
+    },
+    {
+      "id": "cs-oop-0010",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 4,
+      "tags": ["interfaces", "static-abstract", "generic-math", "language-versions"],
+      "prompt": "Which C# 11 interface feature lets an interface require implementing types to provide a static method or operator (the basis of generic math)?",
+      "answer": "Static abstract members",
+      "accepted": ["static abstract", "static abstract interface members", "static abstract members in interfaces"],
+      "distractors": ["Default interface methods", "Extension methods", "Static constructors"],
+      "explanation": "`static abstract` members (e.g. `static abstract T operator +(T a, T b);`) let generic code call `T.Parse(...)` or `a + b` on a type parameter. This is how `INumber<T>` works. Default interface methods (C# 8) provide bodies for instance members instead."
+    },
+    {
+      "id": "cs-oop-0011",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["abstract-classes", "interfaces", "design"],
+      "prompt": "When would you choose an abstract class over an interface?",
+      "answer": "When related types share state or implementation (fields, constructors, protected helpers) and form one 'is-a' family; an interface suits a capability unrelated types can share.",
+      "distractors": [
+        "When a class needs to implement several of them at once.",
+        "When you want to define a contract with no implementation at all.",
+        "When you want structs to be able to implement it too."
+      ],
+      "recall": "self",
+      "explanation": "Abstract classes give shared code and state to a family of closely related types, at the cost of using up the single base class. Interfaces describe a capability (`IComparable`, `IDisposable`) that any class or struct can add, and a type can implement many."
+    },
+    {
+      "id": "cs-oop-0012",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["abstract", "virtual", "inheritance"],
+      "prompt": "Which modifier declares a method with no body that every non-abstract derived class must override?",
+      "answer": "abstract",
+      "distractors": ["virtual", "override", "partial"],
+      "explanation": "An `abstract` method has no body and can only exist in an abstract class; concrete subclasses must override it. A `virtual` method has a body that derived classes *may* override. `partial` methods also have a separate declaration, but that's about splitting code across files, not inheritance."
+    },
+    {
+      "id": "cs-oop-0013",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["abstract", "virtual", "inheritance"],
+      "prompt": "What is the difference between an abstract method and a virtual method?",
+      "answer": "An abstract method has no body and must be overridden (and only exists in abstract classes); a virtual method has a default body that derived classes may override.",
+      "distractors": [
+        "A virtual method has no body; an abstract method has a default body.",
+        "Abstract methods are resolved at compile time; virtual methods at run time.",
+        "Only virtual methods can be overridden with the override keyword."
+      ],
+      "recall": "self",
+      "explanation": "Both are overridden with `override` and both dispatch on the runtime type. The difference is whether there's a default: virtual = optional override with a fallback, abstract = mandatory override, no fallback."
+    },
+    {
+      "id": "cs-oop-0014",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["overloading", "overriding", "polymorphism"],
+      "prompt": "What is it called when a class has several methods with the same name but different parameter lists?",
+      "answer": "Overloading",
+      "accepted": ["method overloading"],
+      "distractors": ["Overriding", "Hiding", "Shadowing"],
+      "explanation": "Overloading = same name, different parameters, chosen by the compiler. Overriding = a derived class replacing a base class's virtual method with the same signature, chosen at run time."
+    },
+    {
+      "id": "cs-oop-0015",
+      "type": "predict-output",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["overloading", "overload-resolution", "static-type"],
+      "prompt": "What does this program print?",
+      "code": "object o = \"hello\";\nPrinter.Print(o);\nPrinter.Print(\"hello\");\n\nstatic class Printer\n{\n    public static void Print(object x) => Console.WriteLine(\"object\");\n    public static void Print(string x) => Console.WriteLine(\"string\");\n}",
+      "answer": "object\nstring",
+      "distractors": ["string\nstring", "object\nobject", "Compile error"],
+      "explanation": "Overload resolution happens at *compile time* using the variable's static type. `o` is declared as `object`, so `Print(object)` is chosen even though it holds a string. Only `virtual`/`override` dispatch looks at the runtime type."
+    },
+    {
+      "id": "cs-oop-0016",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["access-modifiers", "internal"],
+      "prompt": "Which access modifier makes a type or member visible anywhere in the same assembly, but not outside it?",
+      "answer": "internal",
+      "distractors": ["protected", "private", "protected internal"],
+      "explanation": "`internal` = same assembly (project) only. `protected internal` is wider: same assembly *or* any derived class, even in another assembly."
+    },
+    {
+      "id": "cs-oop-0017",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["access-modifiers", "defaults"],
+      "prompt": "What is the default accessibility of a top-level class declared without an access modifier?",
+      "answer": "internal",
+      "distractors": ["public", "private", "protected"],
+      "explanation": "Top-level types default to `internal`. Members inside a class default to `private`. The rule of thumb: C# defaults to the most restrictive access that makes sense, and a top-level type can't be private."
+    },
+    {
+      "id": "cs-oop-0018",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["access-modifiers", "defaults"],
+      "prompt": "What is the default accessibility of a field or method inside a class when no access modifier is written?",
+      "answer": "private",
+      "distractors": ["internal", "public", "protected"],
+      "explanation": "Class (and struct) members default to `private`. Top-level types default to `internal`. Interface members default to `public`."
+    },
+    {
+      "id": "cs-oop-0019",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["access-modifiers", "protected-internal"],
+      "prompt": "Which access modifier means accessible from derived classes *or* from anywhere in the same assembly?",
+      "answer": "protected internal",
+      "distractors": ["private protected", "internal", "protected"],
+      "explanation": "`protected internal` is the union: protected OR internal. `private protected` (C# 7.2) is the intersection: derived classes AND same assembly. People often guess the opposite because the names read like an AND."
+    },
+    {
+      "id": "cs-oop-0020",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 4,
+      "tags": ["access-modifiers", "private-protected"],
+      "prompt": "Which access modifier means accessible only from derived classes that are *also* in the same assembly?",
+      "answer": "private protected",
+      "distractors": ["protected internal", "internal", "protected"],
+      "explanation": "`private protected` (C# 7.2) is protected AND internal: a subclass in another assembly can't see it. `protected internal` is the looser OR."
+    },
+    {
+      "id": "cs-oop-0021",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["oop-pillars", "encapsulation"],
+      "prompt": "Which OOP principle means hiding an object's internal state and only allowing changes through its own methods?",
+      "answer": "Encapsulation",
+      "distractors": ["Abstraction", "Inheritance", "Polymorphism"],
+      "explanation": "Encapsulation protects invariants: fields are private and changes go through methods/properties that validate them. Abstraction is the related but different idea of exposing a simplified model of *what* something does."
+    },
+    {
+      "id": "cs-oop-0022",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 1,
+      "tags": ["oop-pillars", "polymorphism"],
+      "prompt": "Which OOP principle lets code call the same method on objects of different types and get each type's own behaviour?",
+      "answer": "Polymorphism",
+      "distractors": ["Encapsulation", "Inheritance", "Abstraction"],
+      "explanation": "Polymorphism (\"many forms\"): `shape.Area()` runs `Circle.Area` or `Square.Area` depending on the runtime type. Inheritance is one *mechanism* that enables it (interfaces are another), but it isn't the principle itself."
+    },
+    {
+      "id": "cs-oop-0023",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["oop-pillars", "encapsulation", "abstraction"],
+      "prompt": "What is the difference between encapsulation and abstraction?",
+      "answer": "Abstraction decides what to expose (a simplified model or contract: the 'what'); encapsulation hides how it's done and protects internal state (the 'how').",
+      "distractors": [
+        "They're the same principle with different names.",
+        "Abstraction means using abstract classes; encapsulation means using interfaces.",
+        "Encapsulation is about inheritance hierarchies; abstraction is about access modifiers."
+      ],
+      "recall": "self",
+      "explanation": "An `IPaymentGateway` with `Charge(amount)` is an abstraction: callers think in terms of charging, not HTTP. Making the API key and retry state private, reachable only through `Charge`, is encapsulation. They work together but answer different questions."
+    },
+    {
+      "id": "cs-oop-0024",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 2,
+      "tags": ["composition", "inheritance", "design"],
+      "prompt": "Does composition model an 'is-a' or a 'has-a' relationship?",
+      "answer": "has-a",
+      "accepted": ["has a"],
+      "distractors": ["is-a", "Both, depending on access modifiers", "Neither; it models 'can-do'"],
+      "explanation": "Composition = an object *has* other objects as fields and delegates to them (a `Car` has an `Engine`). Inheritance = *is-a* (a `Car` is a `Vehicle`). 'Can-do' is how interfaces are often described. 'Favour composition over inheritance' because it's looser coupling."
+    },
+    {
+      "id": "cs-oop-0025",
+      "type": "concept",
+      "topic": "csharp/oop",
+      "difficulty": 3,
+      "tags": ["interfaces", "explicit-implementation"],
+      "prompt": "What is it called when a class implements an interface member so it can only be called through the interface type, e.g. `void IDisposable.Dispose()`?",
+      "answer": "Explicit interface implementation",
+      "accepted": ["explicit implementation", "explicit interface"],
+      "distractors": ["Implicit interface implementation", "Method hiding", "Default interface method"],
+      "explanation": "Explicit implementations have no access modifier and are hidden from the class's own public surface, so you must cast to the interface to call them. Uses: resolving two interfaces with the same member name, or keeping a rarely-used member out of IntelliSense."
     }
   ]
 }

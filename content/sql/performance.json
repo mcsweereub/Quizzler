@@ -1,0 +1,260 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "sql-performance-0001",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "indexes", "clustered-index", "sql-server"],
+      "prompt": "How many clustered indexes can a SQL Server table have?",
+      "answer": "One",
+      "accepted": ["1", "at most one", "only one"],
+      "distractors": ["Unlimited", "One per column", "Up to 999"],
+      "explanation": "The clustered index *is* the table: its leaf level holds the rows in key order, and rows can only be physically ordered one way. Nonclustered indexes are separate structures, and you can have up to 999 of those."
+    },
+    {
+      "id": "sql-performance-0002",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "indexes", "clustered-index", "nonclustered-index"],
+      "prompt": "What is the difference between a clustered and a nonclustered index?",
+      "answer": "A clustered index stores the table's rows themselves in key order (one per table); a nonclustered index is a separate sorted structure of key values pointing back to the rows (many allowed).",
+      "distractors": [
+        "A clustered index is spread across several servers; a nonclustered index is on one server.",
+        "Nonclustered indexes store the full rows; clustered indexes store only pointers.",
+        "Clustered indexes are only for primary keys; nonclustered indexes are only for foreign keys."
+      ],
+      "recall": "self",
+      "explanation": "In SQL Server the primary key becomes the clustered index by default, but it doesn't have to. A nonclustered index that lacks a column the query needs has to go back to the clustered index for it (a key lookup)."
+    },
+    {
+      "id": "sql-performance-0003",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "indexes", "b-tree", "big-o"],
+      "prompt": "A typical (B-tree) index finds one key among n rows in what time complexity?",
+      "answer": "O(log n)",
+      "accepted": ["logarithmic"],
+      "distractors": ["O(1)", "O(n)", "O(n log n)"],
+      "explanation": "A B-tree is shallow (each page holds hundreds of keys), so even billions of rows need only 4 or 5 page reads to seek. Without an index, finding a row means scanning the table: O(n)."
+    },
+    {
+      "id": "sql-performance-0004",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "indexes", "composite-index", "leftmost-prefix"],
+      "prompt": "An index is on `(LastName, FirstName)`. Can a query filtering only on `FirstName` use it for an index seek?",
+      "answer": "No",
+      "distractors": ["Yes", "Yes, the optimiser reorders the columns", "Only if FirstName is unique"],
+      "explanation": "A composite index is sorted by its first column, then the second within that, like a phone book. Finding everyone called 'Sam' means reading the whole thing (at best a scan). Column order matters: put the columns you filter on with equality first."
+    },
+    {
+      "id": "sql-performance-0005",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "indexes", "covering-index"],
+      "prompt": "What is an index called when it contains every column a query needs, so the base table never has to be read?",
+      "answer": "Covering index",
+      "accepted": ["a covering index", "covering"],
+      "distractors": ["Clustered index", "Filtered index", "Composite index"],
+      "explanation": "If the query's WHERE, JOIN and SELECT columns are all in the index, the database answers from the index alone and skips the per-row lookups. A composite index *can* be covering, but the terms aren't the same thing."
+    },
+    {
+      "id": "sql-performance-0006",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 4,
+      "tags": ["sql", "indexes", "include", "sql-server"],
+      "prompt": "In SQL Server, which clause adds extra non-key columns to the leaf level of a nonclustered index, to make it covering without changing its sort order?",
+      "answer": "INCLUDE",
+      "distractors": ["WITH", "ADD COLUMN", "ON"],
+      "explanation": "`CREATE INDEX IX_Orders_Customer ON Orders(CustomerId) INCLUDE (Total, Status);` sorts by `CustomerId` only but stores `Total` and `Status` alongside, so a query selecting them needs no key lookup. PostgreSQL 11+ has the same `INCLUDE` syntax."
+    },
+    {
+      "id": "sql-performance-0007",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "sargable", "indexes"],
+      "prompt": "What is the term for a WHERE predicate that can use an index seek, e.g. one that doesn't wrap the column in a function?",
+      "answer": "Sargable",
+      "accepted": ["SARGable", "search argumentable", "search-argument-able"],
+      "distractors": ["Deterministic", "Selective", "Covering"],
+      "explanation": "SARG = Search ARGument. `WHERE Price * 1.2 > 100` or `WHERE UPPER(Name) = 'SAM'` hide the column inside an expression, so the index can't be seeked. Rewrite to leave the column bare: `WHERE Price > 100 / 1.2`."
+    },
+    {
+      "id": "sql-performance-0008",
+      "type": "pick-the-code",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "sargable", "dates", "indexes"],
+      "prompt": "`OrderDate` is a `datetime2` column with an index. Which WHERE clause correctly gets all orders placed in 2024 and can use an index seek?",
+      "answer": "WHERE OrderDate >= '2024-01-01' AND OrderDate < '2025-01-01'",
+      "distractors": [
+        "WHERE YEAR(OrderDate) = 2024",
+        "WHERE OrderDate BETWEEN '2024-01-01' AND '2024-12-31'",
+        "WHERE CONVERT(varchar(4), OrderDate, 120) = '2024'"
+      ],
+      "explanation": "A half-open range on the bare column is sargable and includes every time on 31 December. `YEAR(...)` and `CONVERT(...)` wrap the column, forcing a scan. `BETWEEN ... '2024-12-31'` is sargable but stops at midnight on 31 Dec, silently missing that day's orders."
+    },
+    {
+      "id": "sql-performance-0009",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "like", "indexes", "sargable"],
+      "prompt": "Can `WHERE Name LIKE '%son'` use an index seek on `Name`?",
+      "answer": "No",
+      "distractors": ["Yes", "Yes, if the index is unique", "Only on case-sensitive collations"],
+      "explanation": "An index is sorted from the first character, so a leading wildcard gives it nothing to seek on and the whole index is scanned. `LIKE 'Jo%'` *can* seek, because it's a range of names starting with 'Jo'. For contains-style searches, use full-text search."
+    },
+    {
+      "id": "sql-performance-0010",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "indexes", "trade-offs"],
+      "prompt": "What is the main cost of adding lots of indexes to a table?",
+      "answer": "Every INSERT, UPDATE and DELETE must also update each index, so writes get slower (plus extra storage and memory).",
+      "distractors": [
+        "SELECT queries get slower because the optimiser has too many choices.",
+        "Each index makes the table more likely to lose data.",
+        "Tables are locked while any index is being read."
+      ],
+      "recall": "self",
+      "explanation": "Indexes trade write speed and space for read speed. Add indexes for real query patterns (check the execution plans and missing-index hints), and drop ones that are never used."
+    },
+    {
+      "id": "sql-performance-0011",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "orm", "n-plus-one", "ef-core"],
+      "prompt": "What is the name for running one query to load a list and then one more query for each row (common with ORM lazy loading)?",
+      "answer": "N+1 problem",
+      "accepted": ["N+1", "N+1 query problem", "N+1 queries", "n plus one", "select n+1"],
+      "distractors": ["Cartesian explosion", "Parameter sniffing", "Lock escalation"],
+      "explanation": "Loading 100 orders then touching `order.Customer` in a loop can fire 101 round trips. Fix it by loading related data up front (`Include`, a join, or a projection with `Select`). Cartesian explosion is the opposite risk: one huge joined query with duplicated rows."
+    },
+    {
+      "id": "sql-performance-0012",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["ef-core", "eager-loading", "n-plus-one"],
+      "prompt": "Which EF Core method eager-loads related entities in the same query, e.g. each order's customer?",
+      "answer": "Include",
+      "accepted": ["Include()", ".Include"],
+      "distractors": ["Load", "AsNoTracking", "Join"],
+      "explanation": "`context.Orders.Include(o => o.Customer)` joins the customers into one query. `AsNoTracking` skips change tracking (great for read-only queries) but doesn't load relations. Including several collections at once can cause a cartesian explosion; `AsSplitQuery()` helps."
+    },
+    {
+      "id": "sql-performance-0013",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "execution-plan", "diagnostics"],
+      "prompt": "What do you inspect to see how the database will actually run a query, e.g. whether it does an index seek or a table scan?",
+      "answer": "Execution plan",
+      "accepted": ["the execution plan", "query plan", "explain plan", "EXPLAIN", "plan"],
+      "distractors": ["Transaction log", "Query statistics I/O counter only", "Database schema diagram"],
+      "explanation": "The plan shows each operator (seek, scan, key lookup, hash join, sort), its estimated vs actual rows and cost. In SSMS it's 'Include Actual Execution Plan'; in PostgreSQL, `EXPLAIN ANALYZE`."
+    },
+    {
+      "id": "sql-performance-0014",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 1,
+      "tags": ["sql", "indexes", "seek-vs-scan"],
+      "prompt": "To fetch a handful of rows from a large table, which is usually cheaper: an index seek or a table scan?",
+      "answer": "Index seek",
+      "accepted": ["seek", "an index seek"],
+      "distractors": ["Table scan", "They always cost the same", "Index scan"],
+      "explanation": "A seek navigates the B-tree straight to the matching keys; a scan reads every row. When a query returns a large share of the table, though, a scan can be cheaper than thousands of seeks plus lookups, and the optimiser will choose it."
+    },
+    {
+      "id": "sql-performance-0015",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 2,
+      "tags": ["sql", "select-star", "best-practice"],
+      "prompt": "Why should you avoid `SELECT *` in production queries?",
+      "answer": "It reads and transfers columns you don't need, stops covering indexes from being used, and changes the result when columns are added.",
+      "distractors": [
+        "It's slower to parse than listing the column names.",
+        "It always causes a table lock.",
+        "It returns rows in a random order."
+      ],
+      "recall": "self",
+      "explanation": "Pulling a large `nvarchar(max)` column you never use costs I/O, memory and network. Naming columns also lets a narrow index cover the query and keeps mapping code stable when the table changes."
+    },
+    {
+      "id": "sql-performance-0016",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 4,
+      "tags": ["sql", "key-lookup", "execution-plan", "sql-server"],
+      "prompt": "In a SQL Server plan, what is the extra step called when a nonclustered index seek has to fetch other columns from the clustered index for each row?",
+      "answer": "Key lookup",
+      "accepted": ["key lookups", "bookmark lookup", "lookup"],
+      "distractors": ["Index scan", "Hash match", "Table spool"],
+      "explanation": "Each matching row costs an extra seek into the clustered index, which is fine for a few rows but terrible for thousands. Fix it by adding the needed columns with `INCLUDE` (making the index covering). On a heap (no clustered index) it's called an RID lookup."
+    },
+    {
+      "id": "sql-performance-0017",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 4,
+      "tags": ["sql", "parameter-sniffing", "plan-cache", "sql-server"],
+      "prompt": "What is the SQL Server term for a cached plan, compiled for the first parameter value it saw, performing badly for other values?",
+      "answer": "Parameter sniffing",
+      "accepted": ["bad parameter sniffing"],
+      "distractors": ["Plan cache bloat", "Lock escalation", "Statistics skew"],
+      "explanation": "If the first call was for a customer with 3 orders, the cached seek plan may be awful for a customer with 3 million. Options: `OPTION (RECOMPILE)`, `OPTIMIZE FOR`, or rethinking the query/indexes. Skewed statistics make it worse but aren't the term for it."
+    },
+    {
+      "id": "sql-performance-0018",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "statistics", "query-optimiser"],
+      "prompt": "What does the query optimiser use to estimate how many rows a predicate will return?",
+      "answer": "Statistics",
+      "accepted": ["column statistics", "index statistics", "stats", "histograms", "histogram"],
+      "distractors": ["The transaction log", "The index's fill factor", "The previous query's actual row count"],
+      "explanation": "Statistics hold a histogram of value distribution per column or index. Stale statistics after big data changes lead to bad estimates and so bad plans (wrong join type, too little memory). Big gaps between estimated and actual rows in a plan are the tell-tale sign."
+    },
+    {
+      "id": "sql-performance-0019",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "pagination", "keyset", "offset"],
+      "prompt": "Why does `OFFSET ... FETCH` pagination get slower on later pages, and what's the usual alternative?",
+      "answer": "The database still reads and discards every skipped row. Keyset (seek) pagination, e.g. WHERE Id > @lastId ORDER BY Id, jumps straight to the next page using the index.",
+      "distractors": [
+        "Later pages aren't cached; adding more memory fixes it.",
+        "OFFSET re-sorts the whole table for every page; adding NOLOCK fixes it.",
+        "It only gets slower without a primary key; adding one fixes it."
+      ],
+      "recall": "self",
+      "explanation": "`OFFSET 100000` means producing 100,000 rows only to throw them away. Keyset pagination stays fast at any depth; the trade-off is you can only go next/previous, not jump to page 500."
+    },
+    {
+      "id": "sql-performance-0020",
+      "type": "concept",
+      "topic": "sql/performance",
+      "difficulty": 3,
+      "tags": ["sql", "indexes", "selectivity"],
+      "prompt": "Is an index on a column with very few distinct values (e.g. a boolean `IsActive`) usually useful by itself?",
+      "answer": "No",
+      "distractors": ["Yes, always", "Yes, booleans make the smallest and fastest indexes", "Only if it's the clustered index"],
+      "explanation": "If half the rows match, a seek plus lookups is slower than scanning, so the optimiser ignores the index. Low-selectivity columns are useful as a *second* column in a composite index, or in a filtered index when the value you query is rare (`WHERE IsActive = 0`)."
+    }
+  ]
+}

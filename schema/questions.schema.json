@@ -24,7 +24,7 @@
           "description": "Stable unique id, e.g. cs-async-0007. Never change once published."
         },
         "type": {
-          "enum": ["concept", "predict-output", "pick-the-code"]
+          "enum": ["concept", "predict-output", "pick-the-code", "predict-result"]
         },
         "topic": {
           "type": "string",
@@ -40,7 +40,15 @@
         "prompt": { "type": "string", "minLength": 1 },
         "code": {
           "type": "string",
-          "description": "C# top-level statements. Required for predict-output."
+          "description": "predict-output: C# top-level statements. predict-result: the SQL query (SQLite dialect). Required for both."
+        },
+        "setup": {
+          "type": "string",
+          "description": "predict-result only: SQL (SQLite) that creates and fills the tables, shown to the user as grids."
+        },
+        "expect": {
+          "enum": ["rows", "row-count"],
+          "description": "predict-result only: whether the answer is the result rows (default; one per line, values comma-separated) or the number of rows."
         },
         "answer": { "type": "string", "minLength": 1 },
         "accepted": {
@@ -61,8 +69,16 @@
           "description": "How typed answers are graded. Defaults: exact for concept/predict-output, self for pick-the-code."
         }
       },
-      "if": { "properties": { "type": { "const": "predict-output" } } },
-      "then": { "required": ["code"] }
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "predict-output" } } },
+          "then": { "required": ["code"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "predict-result" } } },
+          "then": { "required": ["code", "setup"] }
+        }
+      ]
     }
   }
 }

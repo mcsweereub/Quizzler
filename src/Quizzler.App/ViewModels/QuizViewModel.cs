@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using Quizzler.Core.Questions;
 using Quizzler.Core.Scheduling;
 using Quizzler.Core.Study;
+using Quizzler.App.Services;
+using Quizzler.Data;
 
 namespace Quizzler.App.ViewModels;
 
@@ -31,6 +33,7 @@ public sealed record QuestionView(
     bool IsNew,
     string Prompt,
     string? Code,
+    CodeLanguage CodeSyntax,
     bool IsMultipleChoice,
     bool IsMultiLineAnswer,
     string TypedHint)
@@ -45,7 +48,7 @@ public sealed record QuestionView(
 }
 
 /// <summary>Result panel shown after answering.</summary>
-public sealed record FeedbackView(AnswerState State, string Answer, bool AnswerIsCode, bool ShowAnswer, string Explanation, bool CanOverride)
+public sealed record FeedbackView(AnswerState State, string Answer, bool AnswerIsCode, bool ShowAnswer, string Explanation, bool CanOverride, SqlTable? SqlResult = null)
 {
     public bool IsCorrect => State == AnswerState.Correct;
     public bool IsIncorrect => State == AnswerState.Incorrect;
@@ -60,7 +63,12 @@ public sealed record FeedbackView(AnswerState State, string Answer, bool AnswerI
     public bool ShowAnswerAsCode => ShowAnswer && AnswerIsCode;
     public bool ShowNext => !NeedsSelfGrade;
     public bool ShowOverride => IsIncorrect && CanOverride;
+    public bool HasSqlResult => SqlResult is not null;
+    public string SqlResultCaption => SqlResult is null ? "" : SqlResult.Rows.Count == 1 ? "Result · 1 row" : $"Result · {SqlResult.Rows.Count} rows";
 }
+
+/// <summary>A setup table shown with a SQL question; <see cref="RowMatters"/> is filled in once answered.</summary>
+public sealed record SqlTableItem(SqlTable Table, IReadOnlyList<bool>? RowMatters);
 
 public enum OptionState { Normal, Correct, Wrong, Dimmed }
 
@@ -123,6 +131,11 @@ public sealed class QuizViewModel : ObservableObject
 
     public string SessionDescription { get; }
     public ObservableCollection<OptionViewModel> Options { get; } = [];
+
+    /// <summary>The setup tables of a SQL question (empty otherwise). Row highlights are added after answering.</summary>
+    public ObservableCollection<SqlTableItem> SqlTables { get; } = [];
+
+    private SqlRun? _sqlRun;
 
     public RelayCommand<OptionViewModel> ChooseCommand { get; }
     public RelayCommand SubmitCommand { get; }
@@ -286,7 +299,18 @@ public sealed class QuizViewModel : ObservableObject
         var answerIsCode = q.Type != QuestionType.Concept || q.Answer.Contains('\n');
         // Typed answers that weren't right show the real answer. MC highlights it in the options instead.
         var revealAnswer = (showAnswer && pending.State != AnswerState.Correct) || pending.State == AnswerState.NeedsSelfGrade;
-        Feedback = new FeedbackView(pending.State, q.Answer, answerIsCode, revealAnswer, q.Explanation, pending.CanOverride);
+
+        // SQL: the result grid shows the rows, so only a row count needs repeating as text.
+        if (_sqlRun is not null)
+        {
+            if (q.EffectiveExpect == ResultExpectation.Rows) revealAnswer = false;
+            answerIsCode = false;
+            var tables = _sqlRun.Tables.Select((t, i) => new SqlTableItem(t, _sqlRun.RowMatters?[i])).ToList();
+            SqlTables.Clear();
+            foreach (var t in tables) SqlTables.Add(t);
+        }
+
+        Feedback = new FeedbackView(pending.State, q.Answer, answerIsCode, revealAnswer, q.Explanation, pending.CanOverride, _sqlRun?.Result);
         Mode = QuizMode.Feedback;
     }
 
@@ -303,6 +327,8 @@ public sealed class QuizViewModel : ObservableObject
         Feedback = null;
         TypedAnswer = "";
         Options.Clear();
+        SqlTables.Clear();
+        _sqlRun = null;
 
         if (!_session.MoveNext())
         {
@@ -313,10 +339,13 @@ public sealed class QuizViewModel : ObservableObject
         var item = _session.Current!;
         var q = item.Question;
         var isMc = item.Stage == CardStage.MultipleChoice;
-        var multiLine = q.Type != QuestionType.Concept || q.EffectiveRecall == RecallGrading.Self;
+        var isRowCount = q.Type == QuestionType.PredictResult && q.EffectiveExpect == ResultExpectation.RowCount;
+        var multiLine = (q.Type != QuestionType.Concept && !isRowCount) || q.EffectiveRecall == RecallGrading.Self;
         var hint = q.Type switch
         {
             QuestionType.PredictOutput => "Type the exact output. Ctrl+Enter to submit.",
+            QuestionType.PredictResult when isRowCount => "Type the number of rows and press Enter.",
+            QuestionType.PredictResult => "Type the result: one row per line, values separated by commas, NULL for nulls. Ctrl+Enter to submit.",
             QuestionType.PickTheCode => "Write the code. You'll compare it with the answer. Ctrl+Enter to submit.",
             _ when q.EffectiveRecall == RecallGrading.Self => "Answer in your own words. You'll compare with the answer. Ctrl+Enter to submit.",
             _ => "Type your answer and press Enter.",
@@ -331,6 +360,7 @@ public sealed class QuizViewModel : ObservableObject
             IsNew: item.IsNew,
             Prompt: q.Prompt,
             Code: q.Code,
+            CodeSyntax: q.Type == QuestionType.PredictResult ? CodeLanguage.Sql : CodeLanguage.CSharp,
             IsMultipleChoice: isMc,
             IsMultiLineAnswer: multiLine,
             TypedHint: hint);
@@ -340,7 +370,22 @@ public sealed class QuizViewModel : ObservableObject
             for (var i = 0; i < choices.Options.Count; i++)
             {
                 var text = choices.Options[i];
-                Options.Add(new OptionViewModel(i, text, q.Type == QuestionType.PickTheCode || text.Contains('\n')));
+                var isCode = q.Type is QuestionType.PickTheCode || (q.Type is QuestionType.PredictResult && !isRowCount) || text.Contains('\n');
+                Options.Add(new OptionViewModel(i, text, isCode));
+            }
+        }
+
+        if (q.Type == QuestionType.PredictResult)
+        {
+            try
+            {
+                _sqlRun = SqlSandbox.Run(q, analyseRows: true);
+                foreach (var t in _sqlRun.Tables) SqlTables.Add(new SqlTableItem(t, null));
+            }
+            catch (SqlRunException ex)
+            {
+                // Content is verified by the test suite, so this means a bad import; show the question without tables.
+                Log.Error($"SQL for {q.Id} failed", ex);
             }
         }
 

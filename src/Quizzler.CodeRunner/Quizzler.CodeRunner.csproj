@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quizzler.Core\Quizzler.Core.csproj" />
+    <ProjectReference Include="..\Quizzler.Data\Quizzler.Data.csproj" />
   </ItemGroup>
 
 </Project>

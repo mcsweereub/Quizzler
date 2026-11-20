@@ -82,6 +82,245 @@
       "answer": "out",
       "distractors": ["ref", "in", "params"],
       "explanation": "`out` parameters must be assigned by the method and need not be initialised by the caller (e.g. `int.TryParse(s, out var n)`). `ref` requires the caller to initialise it and the method may or may not assign. `in` is a read-only reference."
+    },
+    {
+      "id": "cs-types-0008",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 1,
+      "tags": ["struct", "inheritance"],
+      "prompt": "Can a struct inherit from another struct or a class?",
+      "answer": "No",
+      "distractors": ["Yes", "Only from another struct", "Only from an abstract class"],
+      "explanation": "Structs implicitly derive from `System.ValueType` and are implicitly sealed, so there are no struct hierarchies. They *can* implement interfaces."
+    },
+    {
+      "id": "cs-types-0009",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["struct", "interfaces", "boxing"],
+      "prompt": "Can a struct implement an interface?",
+      "answer": "Yes",
+      "distractors": ["No", "Only interfaces with no methods", "Only if it is a readonly struct"],
+      "explanation": "Yes, e.g. `int` implements `IComparable<int>`. The catch: assigning a struct to a variable of the interface type boxes it. Generic constraints (`where T : IComparable<T>`) avoid that boxing."
+    },
+    {
+      "id": "cs-types-0010",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 3,
+      "tags": ["value-types", "memory", "stack-vs-heap"],
+      "prompt": "Where is an `int` field of a class instance stored?",
+      "answer": "On the heap",
+      "accepted": ["heap", "the heap", "in the heap", "on the heap inside the object", "inside the object on the heap"],
+      "distractors": ["On the stack", "In a separate boxed object", "In a CPU register"],
+      "explanation": "'Value types live on the stack' is a myth. A value type is stored *inline* wherever its container lives: a local variable usually on the stack, but a field of a class is part of that object on the heap. It isn't boxed; it's just bytes inside the object."
+    },
+    {
+      "id": "cs-types-0011",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["struct", "class", "design"],
+      "prompt": "When should you choose a struct over a class?",
+      "answer": "For small values that are logically a single value (a point, money), ideally immutable, often stored in arrays or short-lived, and needing no inheritance or identity.",
+      "distractors": [
+        "Whenever you want it to be faster, regardless of size.",
+        "When the object needs to be shared and modified from several places.",
+        "When you need a base type other types can inherit from."
+      ],
+      "recall": "self",
+      "explanation": "Structs avoid heap allocations but are copied on every assignment and argument pass, so large structs can be *slower*. Shared mutable state wants a class, because changing a copied struct only changes the copy."
+    },
+    {
+      "id": "cs-types-0012",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["records", "equality", "value-equality"],
+      "prompt": "What does this program print?",
+      "code": "var a = new PointRecord(1, 2);\nvar b = new PointRecord(1, 2);\nvar c = new PointClass { X = 1, Y = 2 };\nvar d = new PointClass { X = 1, Y = 2 };\nConsole.WriteLine(a == b);\nConsole.WriteLine(c == d);\n\nrecord PointRecord(int X, int Y);\n\nclass PointClass\n{\n    public int X { get; set; }\n    public int Y { get; set; }\n}",
+      "answer": "True\nFalse",
+      "distractors": ["True\nTrue", "False\nFalse", "False\nTrue"],
+      "explanation": "Records get compiler-generated *value* equality: `==` compares every property. A plain class uses *reference* equality unless you override it, and `c` and `d` are different objects. Both records are still reference types; only equality changed."
+    },
+    {
+      "id": "cs-types-0013",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["records", "immutability", "with-expression"],
+      "prompt": "Which keyword creates a modified copy of a record (non-destructive mutation), leaving the original unchanged?",
+      "answer": "with",
+      "distractors": ["new", "init", "clone"],
+      "explanation": "`var moved = point with { X = 5 };` copies `point` and sets `X` on the copy. `init` is the accessor that makes properties settable only during construction, which is what makes `with` necessary."
+    },
+    {
+      "id": "cs-types-0014",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["records", "tostring"],
+      "prompt": "What does this program print?",
+      "code": "Console.WriteLine(new Person(\"Ada\", 36));\n\nrecord Person(string Name, int Age);",
+      "answer": "Person { Name = Ada, Age = 36 }",
+      "distractors": ["Person", "Person(Ada, 36)", "Person { Ada, 36 }"],
+      "explanation": "Records generate a `ToString()` that lists public properties as `Type { Prop = value, ... }`. A plain class would print just its type name (`Person`)."
+    },
+    {
+      "id": "cs-types-0015",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["records", "reference-types", "record-struct"],
+      "prompt": "Is a plain `record` (written without `struct`) a reference type or a value type?",
+      "answer": "Reference type",
+      "accepted": ["reference", "a reference type", "class"],
+      "distractors": ["Value type", "It depends on its size", "Neither; records are a separate kind of type"],
+      "explanation": "`record` is shorthand for `record class`: a reference type with value equality. C# 10 added `record struct` for a value-type record. Records feel like values because of their equality and `with`, but they're still heap objects."
+    },
+    {
+      "id": "cs-types-0016",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["const", "readonly", "compile-time"],
+      "prompt": "Which field modifier requires a value known at compile time and copies that value into every assembly that uses it?",
+      "answer": "const",
+      "distractors": ["readonly", "static readonly", "sealed"],
+      "explanation": "`const` values are baked into callers' IL at compile time, and only primitives, strings, enums and null are allowed. `readonly` and `static readonly` are real fields read at run time, so they can hold any type."
+    },
+    {
+      "id": "cs-types-0017",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["readonly", "fields", "immutability"],
+      "prompt": "Which field modifier allows assignment only in the field's declaration or in a constructor of the same class?",
+      "answer": "readonly",
+      "distractors": ["const", "init", "sealed"],
+      "explanation": "`readonly` fields can be set in their initialiser or any constructor, then never again. `init` is the property-accessor equivalent (settable in object initialisers too). `const` can't be set in a constructor at all."
+    },
+    {
+      "id": "cs-types-0018",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 3,
+      "tags": ["const", "versioning", "assemblies"],
+      "prompt": "A library changes a public `const` from 5 to 10 and ships a new DLL. An app compiled against the old version is not recompiled. What value does the app see?",
+      "answer": "5",
+      "distractors": ["10", "0", "It throws MissingFieldException"],
+      "explanation": "A `const` is copied into the caller's IL when the *caller* is compiled, so the app keeps using 5 until it's rebuilt. That's why public values that might change should be `static readonly`, which is read from the library at run time."
+    },
+    {
+      "id": "cs-types-0019",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["const", "readonly", "static-readonly"],
+      "prompt": "What is the difference between `const` and `static readonly`?",
+      "answer": "const is a compile-time constant (primitives/strings only) copied into callers; static readonly is assigned once at run time (any type, any calculation) and read from the field.",
+      "distractors": [
+        "const can be changed in a static constructor; static readonly cannot.",
+        "static readonly values are copied into calling assemblies; const values are not.",
+        "There is no difference; const is shorthand for static readonly."
+      ],
+      "recall": "self",
+      "explanation": "`const double Pi = 3.14159;` is fine, but `const DateTime Start = DateTime.UtcNow;` isn't: that needs `static readonly`. Consts are implicitly static. The copy-into-callers behaviour is why changing a public const needs consumers to recompile."
+    },
+    {
+      "id": "cs-types-0020",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["reference-types", "parameters", "pass-by-value"],
+      "prompt": "What does this program print?",
+      "code": "var list = new List<int> { 1 };\nAddTwo(list);\nConsole.WriteLine(list.Count);\nReplace(list);\nConsole.WriteLine(list.Count);\n\nstatic void AddTwo(List<int> l) => l.Add(2);\nstatic void Replace(List<int> l) => l = new List<int>();",
+      "answer": "2\n2",
+      "distractors": ["1\n1", "2\n0", "1\n0"],
+      "explanation": "C# passes arguments by value; for a reference type the *reference* is copied. Both variables point at the same list, so `Add` is visible to the caller. Assigning a new list to `l` only changes the method's copy of the reference. With `ref List<int> l`, the second line would print 0."
+    },
+    {
+      "id": "cs-types-0021",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["parameters", "in", "ref"],
+      "prompt": "Which parameter modifier passes an argument by reference but read-only, so the method cannot assign to it?",
+      "answer": "in",
+      "distractors": ["ref", "out", "params"],
+      "explanation": "`in` passes by reference without allowing writes, which avoids copying large structs. `ref` allows read and write; `out` requires the method to write. `params` is about variable argument counts, not references."
+    },
+    {
+      "id": "cs-types-0022",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 1,
+      "tags": ["var", "type-inference", "static-typing"],
+      "prompt": "Is the type of a `var` variable decided at compile time or at run time?",
+      "answer": "Compile time",
+      "accepted": ["at compile time", "compile-time"],
+      "distractors": ["Run time", "On its first assignment at run time", "When the JIT compiles the method"],
+      "explanation": "`var` is just type inference: the compiler works out the type from the initialiser and it's fixed from then on, exactly as if you'd written it. `dynamic` is the one that defers type checking to run time."
+    },
+    {
+      "id": "cs-types-0023",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["dynamic", "late-binding"],
+      "prompt": "Which keyword makes member access on a variable be checked at run time instead of compile time?",
+      "answer": "dynamic",
+      "distractors": ["var", "object", "unsafe"],
+      "explanation": "With `dynamic`, `x.Anything()` compiles and is resolved at run time (throwing `RuntimeBinderException` if missing). `object` is statically typed: you can only call `object`'s members without a cast. `var` is compile-time inference."
+    },
+    {
+      "id": "cs-types-0024",
+      "type": "concept",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["casting", "as-operator"],
+      "prompt": "What does the `as` operator return when the conversion fails?",
+      "answer": "null",
+      "distractors": ["It throws InvalidCastException", "The default value of the target type", "false"],
+      "explanation": "`obj as string` gives `null` on failure, while a cast `(string)obj` throws `InvalidCastException`. `as` only works with reference and nullable types for that reason. Modern code often uses pattern matching instead: `if (obj is string s)`."
+    },
+    {
+      "id": "cs-types-0025",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["casting", "unboxing", "pattern-matching"],
+      "prompt": "What does this program print?",
+      "code": "object o = \"42\";\ntry\n{\n    int n = (int)o;\n    Console.WriteLine(n);\n}\ncatch (InvalidCastException)\n{\n    Console.WriteLine(\"Invalid cast\");\n}\nConsole.WriteLine(o is string s ? s.Length : -1);",
+      "answer": "Invalid cast\n2",
+      "distractors": ["42\n2", "0\n2", "Invalid cast\n-1"],
+      "explanation": "A cast never *converts* text to a number: `(int)o` tries to unbox, and `o` holds a string, so it throws. Use `int.Parse` for that. The pattern `o is string s` succeeds and binds `s`, whose length is 2."
+    },
+    {
+      "id": "cs-types-0026",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 2,
+      "tags": ["integer-division", "arithmetic"],
+      "prompt": "What does this program print?",
+      "code": "Console.WriteLine(7 / 2);\nConsole.WriteLine(7 / 2.0);\nConsole.WriteLine(-7 / 2);",
+      "answer": "3\n3.5\n-3",
+      "distractors": ["3.5\n3.5\n-3.5", "3\n3.5\n-4", "4\n3.5\n-4"],
+      "explanation": "Two `int`s give integer division, which truncates *toward zero*: 3 and -3 (not -4, which is what flooring would give, as in Python). If either operand is a `double`, the division is floating-point: 3.5."
+    },
+    {
+      "id": "cs-types-0027",
+      "type": "predict-output",
+      "topic": "csharp/types",
+      "difficulty": 3,
+      "tags": ["overflow", "checked", "arithmetic"],
+      "prompt": "What does this program print?",
+      "code": "int max = int.MaxValue;\nConsole.WriteLine(max + 1);\ntry\n{\n    Console.WriteLine(checked(max + 1));\n}\ncatch (OverflowException)\n{\n    Console.WriteLine(\"Overflow\");\n}",
+      "answer": "-2147483648\nOverflow",
+      "distractors": ["Overflow\nOverflow", "2147483648\nOverflow", "-2147483648\n-2147483648"],
+      "explanation": "Integer arithmetic is *unchecked* by default, so overflow silently wraps around to `int.MinValue`. Inside `checked(...)` (or with the CheckForOverflowUnderflow project setting) it throws `OverflowException` instead."
     }
   ]
 }

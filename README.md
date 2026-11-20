@@ -9,12 +9,14 @@ It sits next to the clock, shows how many questions are due, and reminds you whe
   6 days, then growing). Questions you miss come back in 10 minutes.
 - **Multiple choice first, then typed.** A new question is multiple choice. Once you get it right, next time
   you have to type the answer. Get it wrong and it drops back to multiple choice.
-- **Three question types:**
+- **Four question types:**
   - *Concept*: short factual answers (`sealed`, `O(log n)`, `Liskov Substitution Principle`).
   - *Predict the output*: read a C# snippet and say what it prints.
   - *Pick the code*: choose the snippet that correctly does something.
-- **Every answer key is checked by running it.** Predict-output snippets are compiled and run with Roslyn
-  during tests, so a wrong answer key fails the build.
+  - *Predict the result*: small tables are shown as grids next to a SQL query; say what it returns. After
+    answering you see the real result, with the rows that affected it highlighted and the rest dimmed.
+- **Every answer key is checked by running it.** C# snippets are compiled and run with Roslyn, and SQL queries
+  run in an in-memory SQLite database, during tests, so a wrong answer key fails the build.
 - **New-per-day cap** (default 10) so a big batch of new questions doesn't swamp you.
 
 ## Requirements

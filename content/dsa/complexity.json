@@ -1,0 +1,152 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "dsa-complexity-0001",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 1,
+      "tags": ["big-o", "binary-search"],
+      "prompt": "What is the time complexity of binary search on a sorted array of n items?",
+      "answer": "O(log n)",
+      "accepted": ["logarithmic"],
+      "distractors": ["O(n)", "O(1)", "O(n log n)"],
+      "explanation": "Each comparison halves the remaining range, so a million items need about 20 steps. A linear scan is O(n)."
+    },
+    {
+      "id": "dsa-complexity-0002",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 1,
+      "tags": ["binary-search", "preconditions"],
+      "prompt": "What must be true of the data for binary search to work?",
+      "answer": "It must be sorted",
+      "accepted": ["sorted", "the data must be sorted", "it is sorted", "sorted order"],
+      "distractors": ["It must have no duplicates", "Its length must be a power of two", "It must be stored in a linked list"],
+      "explanation": "Binary search decides which half to discard by comparing with the middle element, which only works if the data is in order. Duplicates are fine (you just need to decide which one you want), and it needs random access, so linked lists are a bad fit."
+    },
+    {
+      "id": "dsa-complexity-0003",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 2,
+      "tags": ["big-o", "sorting"],
+      "prompt": "What is the best possible worst-case time complexity for a comparison-based sort?",
+      "answer": "O(n log n)",
+      "distractors": ["O(n)", "O(log n)", "O(n²)"],
+      "explanation": "Any sort that only compares elements needs Ω(n log n) comparisons in the worst case; merge sort and heap sort achieve it. Non-comparison sorts (counting, radix) can beat it for restricted keys like small integers."
+    },
+    {
+      "id": "dsa-complexity-0004",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 1,
+      "tags": ["big-o", "arrays", "random-access"],
+      "prompt": "What is the time complexity of reading the element at index i of an array?",
+      "answer": "O(1)",
+      "accepted": ["constant", "constant time"],
+      "distractors": ["O(n)", "O(log n)", "O(i)"],
+      "explanation": "An array is one contiguous block, so element i lives at `start + i * size`: one calculation, whatever i is. That's random access."
+    },
+    {
+      "id": "dsa-complexity-0005",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 2,
+      "tags": ["big-o", "linked-list"],
+      "prompt": "What is the time complexity of reaching the i-th element of a singly linked list of n nodes, in the worst case?",
+      "answer": "O(n)",
+      "accepted": ["linear"],
+      "distractors": ["O(1)", "O(log n)", "O(n log n)"],
+      "explanation": "Nodes are scattered in memory and only know their `Next`, so you must walk from the head. That's the price linked lists pay for O(1) insert/remove once you already hold a node."
+    },
+    {
+      "id": "dsa-complexity-0006",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 2,
+      "tags": ["linked-list", "arrays", "trade-offs"],
+      "prompt": "When is a linked list a better choice than an array or `List<T>`?",
+      "answer": "When you frequently insert or remove at arbitrary positions you already hold a reference to (O(1)) and don't need indexed access. Arrays win on indexing and cache-friendly iteration.",
+      "distractors": [
+        "When you need fast access by index.",
+        "When memory use must be as small as possible.",
+        "Whenever the data needs to stay sorted."
+      ],
+      "recall": "self",
+      "explanation": "Each linked-list node carries pointers and lives separately on the heap, so it uses more memory and iterates slower (cache misses). In practice `List<T>` wins most of the time; linked lists shine for things like LRU caches."
+    },
+    {
+      "id": "dsa-complexity-0007",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 2,
+      "tags": ["graphs", "bfs", "queue"],
+      "prompt": "Which data structure does breadth-first search use to hold the nodes waiting to be visited?",
+      "answer": "Queue",
+      "accepted": ["a queue", "Queue<T>", "FIFO queue"],
+      "distractors": ["Stack", "Heap", "Hash set"],
+      "explanation": "BFS takes the *oldest* discovered node next (FIFO), so it explores level by level and finds shortest paths in unweighted graphs. Swap the queue for a stack and you get depth-first search. A hash set is used alongside, to track visited nodes."
+    },
+    {
+      "id": "dsa-complexity-0008",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 2,
+      "tags": ["graphs", "dfs", "stack"],
+      "prompt": "Which data structure does an iterative (non-recursive) depth-first search use?",
+      "answer": "Stack",
+      "accepted": ["a stack", "Stack<T>"],
+      "distractors": ["Queue", "Heap", "Linked list"],
+      "explanation": "DFS goes as deep as possible first by always taking the *newest* discovered node (LIFO). Recursive DFS uses the call stack for the same thing, which can overflow on very deep graphs."
+    },
+    {
+      "id": "dsa-complexity-0009",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 3,
+      "tags": ["big-o", "sorting", "quicksort"],
+      "prompt": "What is the worst-case time complexity of quicksort?",
+      "answer": "O(n²)",
+      "accepted": ["O(n^2)", "quadratic"],
+      "distractors": ["O(n log n)", "O(n)", "O(log n)"],
+      "explanation": "Quicksort averages O(n log n), but consistently bad pivots (e.g. always the first element of already-sorted data) give O(n²). .NET's `Array.Sort` uses introsort, which switches to heap sort to cap the worst case at O(n log n)."
+    },
+    {
+      "id": "dsa-complexity-0010",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 1,
+      "tags": ["big-o", "nested-loops"],
+      "prompt": "What is the time complexity of two nested loops that each run n times?",
+      "answer": "O(n²)",
+      "accepted": ["O(n^2)", "quadratic"],
+      "distractors": ["O(2n)", "O(n)", "O(n log n)"],
+      "explanation": "The inner body runs n × n times. Two loops one *after* the other would be O(2n), which simplifies to O(n), since Big-O drops constant factors."
+    },
+    {
+      "id": "dsa-complexity-0011",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 3,
+      "tags": ["heap", "priority-queue"],
+      "prompt": "What can a min-heap give you in O(1) time?",
+      "answer": "The smallest element",
+      "accepted": ["the minimum", "minimum", "smallest", "min", "the smallest item"],
+      "distractors": ["The largest element", "The median", "Any element by index"],
+      "explanation": "A min-heap keeps the smallest item at the root, so peeking is O(1). Removing it or inserting is O(log n). Finding anything else (such as the max) is O(n)."
+    },
+    {
+      "id": "dsa-complexity-0012",
+      "type": "concept",
+      "topic": "dsa/complexity",
+      "difficulty": 3,
+      "tags": ["heap", "priority-queue", "dotnet"],
+      "prompt": "Which .NET collection is a binary min-heap, the usual choice for Dijkstra's algorithm or a top-k problem?",
+      "answer": "PriorityQueue<TElement, TPriority>",
+      "accepted": ["PriorityQueue", "PriorityQueue<TElement,TPriority>"],
+      "distractors": ["SortedSet<T>", "Queue<T>", "SortedList<TKey, TValue>"],
+      "explanation": "`PriorityQueue` (added in .NET 6) dequeues the lowest priority first in O(log n). `SortedSet` can be bent into the same role but rejects duplicates, and `Queue<T>` ignores priority entirely."
+    }
+  ]
+}

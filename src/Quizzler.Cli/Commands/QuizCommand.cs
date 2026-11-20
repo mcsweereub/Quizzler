@@ -81,6 +81,21 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         AnsiConsole.Write(new Rule($"[grey]{index}/{total} · {Markup.Escape(q.Topic)} · difficulty {q.Difficulty} · {mode}[/]{badge}").LeftJustified());
 
         AnsiConsole.MarkupLine(Format(q.Prompt));
+
+        SqlRun? sql = null;
+        if (q.Type == QuestionType.PredictResult)
+        {
+            try
+            {
+                sql = SqlSandbox.Run(q, analyseRows: true);
+                foreach (var table in sql.Tables) AnsiConsole.Write(SqlGrid(table, null, table.Name));
+            }
+            catch (SqlRunException ex)
+            {
+                AnsiConsole.MarkupLine($"[red]{Markup.Escape(ex.Message)}[/]");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(q.Code))
             AnsiConsole.Write(CodePanel(q.Code));
 
@@ -115,10 +130,16 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         }
         else
         {
-            var multiLine = q.Type != QuestionType.Concept;
+            var isRowCount = q.Type == QuestionType.PredictResult && q.EffectiveExpect == ResultExpectation.RowCount;
+            var multiLine = q.Type != QuestionType.Concept && !isRowCount;
             response = multiLine
-                ? ReadMultiLine(q.Type == QuestionType.PredictOutput ? "Type the exact output" : "Write your answer")
-                : ReadLine("Your answer: ");
+                ? ReadMultiLine(q.Type switch
+                {
+                    QuestionType.PredictOutput => "Type the exact output",
+                    QuestionType.PredictResult => "Type the result rows, values separated by commas, NULL for nulls",
+                    _ => "Write your answer",
+                })
+                : ReadLine(isRowCount ? "Number of rows: " : "Your answer: ");
             if (response is null || IsQuit(response)) return (Next.Quit, false);
 
             var result = AnswerChecker.Check(q, response);
@@ -145,6 +166,16 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         }
 
         stopwatch.Stop();
+
+        if (sql is not null)
+        {
+            var count = sql.Result.Rows.Count == 1 ? "1 row" : $"{sql.Result.Rows.Count} rows";
+            AnsiConsole.Write(SqlGrid(sql.Result, null, $"Result · {count}"));
+            AnsiConsole.MarkupLine("[grey]Rows that affect the result (deleting one would change it) are bold; the rest are dimmed:[/]");
+            for (var t = 0; t < sql.Tables.Count; t++)
+                AnsiConsole.Write(SqlGrid(sql.Tables[t], sql.RowMatters?[t], sql.Tables[t].Name));
+        }
+
         AnsiConsole.MarkupLine($"[grey]{Format(q.Explanation)}[/]");
 
         // Follow-up: refine the rating, override a too-strict grader, or flag a bad question.
@@ -187,6 +218,23 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
             AnsiConsole.MarkupLine($"  [bold green]{Format(q.Answer)}[/]");
         else
             AnsiConsole.Write(CodePanel(q.Answer).BorderColor(Color.Green));
+    }
+
+    private static Table SqlGrid(SqlTable table, IReadOnlyList<bool>? rowMatters, string title)
+    {
+        var grid = new Table().Border(TableBorder.Rounded).BorderColor(Color.Grey).Title($"[grey]{Markup.Escape(title)}[/]");
+        foreach (var column in table.Columns) grid.AddColumn($"[bold]{Markup.Escape(column)}[/]");
+        if (table.Rows.Count == 0) grid.AddRow(table.Columns.Select((_, i) => i == 0 ? "[grey italic](no rows)[/]" : "").ToArray());
+        for (var r = 0; r < table.Rows.Count; r++)
+        {
+            var style = rowMatters is null ? "" : rowMatters[r] ? "bold" : "grey";
+            grid.AddRow(table.Rows[r].Select(value =>
+            {
+                var cell = value == SqlSandbox.Null ? "[italic]NULL[/]" : Markup.Escape(value);
+                return style == "" ? cell : $"[{style}]{cell}[/]";
+            }).ToArray());
+        }
+        return grid;
     }
 
     private static Panel CodePanel(string code, string? header = null)

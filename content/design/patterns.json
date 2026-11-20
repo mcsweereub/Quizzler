@@ -1,0 +1,121 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "design-patterns-0001",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 2,
+      "tags": ["design-patterns", "strategy", "behavioural"],
+      "prompt": "Which design pattern puts a family of interchangeable algorithms behind a common interface so one can be chosen at run time (e.g. different shipping-cost calculators)?",
+      "answer": "Strategy",
+      "accepted": ["strategy pattern"],
+      "distractors": ["Template Method", "Decorator", "State"],
+      "explanation": "Strategy: the context holds an `IShippingCalculator` and the caller picks which one. Template Method varies steps via *inheritance* instead of composition. State looks similar structurally, but the object swaps its own behaviour as its internal state changes."
+    },
+    {
+      "id": "design-patterns-0002",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 2,
+      "tags": ["design-patterns", "decorator", "structural"],
+      "prompt": "Which design pattern wraps an object in another object with the same interface to add behaviour, e.g. stacking logging and retry around a service?",
+      "answer": "Decorator",
+      "accepted": ["decorator pattern"],
+      "distractors": ["Adapter", "Facade", "Composite"],
+      "explanation": "A decorator implements the same interface as what it wraps, does its extra work, and delegates. Because the interface is unchanged, decorators can be stacked in any order: `new Retry(new Logging(new HttpService()))`."
+    },
+    {
+      "id": "design-patterns-0003",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 2,
+      "tags": ["design-patterns", "adapter", "structural"],
+      "prompt": "Which design pattern converts one interface into a different one that a client expects, e.g. wrapping a third-party SDK to fit your own interface?",
+      "answer": "Adapter",
+      "accepted": ["adapter pattern"],
+      "distractors": ["Decorator", "Facade", "Bridge"],
+      "explanation": "An adapter translates calls from the interface you want to the one you have. A facade also wraps things, but its goal is a *simpler* interface over a whole subsystem rather than matching an existing contract."
+    },
+    {
+      "id": "design-patterns-0004",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 3,
+      "tags": ["design-patterns", "adapter", "decorator"],
+      "prompt": "What is the difference between the Adapter and Decorator patterns?",
+      "answer": "An Adapter changes the interface (makes an incompatible type fit what the client expects); a Decorator keeps the same interface and adds behaviour, and decorators can be stacked.",
+      "distractors": [
+        "An Adapter adds behaviour; a Decorator changes the interface.",
+        "They're the same pattern; 'Decorator' is just the C# name.",
+        "An Adapter uses inheritance; a Decorator uses static methods."
+      ],
+      "recall": "self",
+      "explanation": "Both wrap an object and delegate to it, which is why they get mixed up. Ask: does the wrapper expose the *same* interface as the thing inside (Decorator) or a *different* one (Adapter)?"
+    },
+    {
+      "id": "design-patterns-0005",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 2,
+      "tags": ["design-patterns", "observer", "behavioural", "events"],
+      "prompt": "Which design pattern lets objects subscribe to be notified when another object's state changes (the idea C# events are built on)?",
+      "answer": "Observer",
+      "accepted": ["observer pattern"],
+      "distractors": ["Mediator", "Command", "Strategy"],
+      "explanation": "Observer: a subject keeps a list of subscribers and notifies them all. C# events, `INotifyPropertyChanged` and `IObservable<T>` are all forms of it. A mediator instead centralises communication so objects don't reference each other."
+    },
+    {
+      "id": "design-patterns-0006",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 3,
+      "tags": ["design-patterns", "factory-method", "creational"],
+      "prompt": "Which design pattern lets a base class defer the choice of which concrete class to create to its subclasses, through an overridable creation method?",
+      "answer": "Factory Method",
+      "accepted": ["factory method pattern"],
+      "distractors": ["Abstract Factory", "Builder", "Prototype"],
+      "explanation": "Factory Method = one virtual `Create...()` method that subclasses override. Abstract Factory = an object with several creation methods for a *family* of related products (e.g. Windows vs Mac widgets)."
+    },
+    {
+      "id": "design-patterns-0007",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 2,
+      "tags": ["design-patterns", "builder", "creational"],
+      "prompt": "Which design pattern constructs a complex object step by step, often with chained calls ending in `Build()`?",
+      "answer": "Builder",
+      "accepted": ["builder pattern"],
+      "distractors": ["Factory Method", "Prototype", "Abstract Factory"],
+      "explanation": "Builder separates *how* to assemble an object from its final representation, avoiding constructors with a dozen optional parameters. `WebApplication.CreateBuilder(...)...Build()` and `StringBuilder` are familiar examples."
+    },
+    {
+      "id": "design-patterns-0008",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 3,
+      "tags": ["design-patterns", "singleton", "testability"],
+      "prompt": "Why is the classic Singleton pattern (a static `Instance` property) often considered an anti-pattern?",
+      "answer": "It's hidden global state: callers are coupled to a concrete class, making testing and swapping implementations hard. A singleton lifetime in a DI container gives one instance without that.",
+      "distractors": [
+        "It always causes memory leaks.",
+        "It can't be made thread-safe in C#.",
+        "It uses more memory than creating a new instance each time."
+      ],
+      "recall": "self",
+      "explanation": "Thread-safety is easy (`Lazy<T>` or a static readonly field). The real problem is that `Logger.Instance` buried in methods is an invisible dependency you can't replace in a test. Registering `services.AddSingleton<ILogger, FileLogger>()` keeps one instance but makes the dependency explicit."
+    },
+    {
+      "id": "design-patterns-0009",
+      "type": "concept",
+      "topic": "design/patterns",
+      "difficulty": 3,
+      "tags": ["design-patterns", "template-method", "behavioural"],
+      "prompt": "Which design pattern defines the skeleton of an algorithm in a base-class method and lets subclasses override specific steps?",
+      "answer": "Template Method",
+      "accepted": ["template method pattern"],
+      "distractors": ["Strategy", "Factory Method", "Decorator"],
+      "explanation": "Template Method uses inheritance: the base class's non-virtual `Run()` calls virtual/abstract steps like `Validate()` and `Save()`. Strategy gets the same flexibility through composition by passing in an object, which is usually easier to test."
+    }
+  ]
+}

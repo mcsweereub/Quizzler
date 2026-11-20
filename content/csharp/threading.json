@@ -1,0 +1,218 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-threading-0001",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 1,
+      "tags": ["threading", "race-condition"],
+      "prompt": "What is the name for a bug where the result depends on the unpredictable timing of threads, e.g. two threads doing `count++` on the same field?",
+      "answer": "Race condition",
+      "accepted": ["a race condition", "race", "data race"],
+      "distractors": ["Deadlock", "Livelock", "Starvation"],
+      "explanation": "In a race, threads interleave in a way that gives a wrong result, e.g. both read 5 and both write 6. A deadlock is the opposite failure: threads stop making progress because each waits for the other."
+    },
+    {
+      "id": "cs-threading-0002",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "atomicity"],
+      "prompt": "Is `count++` on a shared `int` field atomic?",
+      "answer": "No",
+      "distractors": ["Yes", "Yes, because int is 32 bits", "Only if the field is volatile"],
+      "explanation": "`count++` is read, add, write: three steps another thread can interleave with. Reading or writing an aligned `int` *alone* is atomic, but the increment isn't. `volatile` doesn't help; use `Interlocked.Increment` or a `lock`."
+    },
+    {
+      "id": "cs-threading-0003",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "interlocked", "atomicity"],
+      "prompt": "Which class provides atomic operations such as `Increment`, `Add` and `CompareExchange` without taking a lock?",
+      "answer": "Interlocked",
+      "distractors": ["Monitor", "Volatile", "Parallel"],
+      "explanation": "`Interlocked` maps to single CPU instructions, so it's the cheapest way to update one shared number or reference. Anything that updates *several* fields consistently still needs a `lock`."
+    },
+    {
+      "id": "cs-threading-0004",
+      "type": "predict-output",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "interlocked", "parallel"],
+      "prompt": "What does this program print?",
+      "code": "int total = 0;\nParallel.For(0, 1000, i => Interlocked.Increment(ref total));\nConsole.WriteLine(total);",
+      "answer": "1000",
+      "distractors": ["A number below 1000 that varies run to run", "0", "Compile error"],
+      "explanation": "`Parallel.For` waits for all iterations before returning, and `Interlocked.Increment` makes each increment atomic, so the result is always 1000. With plain `total++` you'd often get less than 1000 because of lost updates."
+    },
+    {
+      "id": "cs-threading-0005",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 1,
+      "tags": ["threading", "lock", "mutual-exclusion"],
+      "prompt": "Which C# statement ensures only one thread at a time can run a block of code?",
+      "answer": "lock",
+      "distractors": ["volatile", "synchronized", "fixed"],
+      "explanation": "`lock (_gate) { ... }` gives mutual exclusion within one process. `synchronized` is Java's keyword, not C#'s. `volatile` affects visibility of a single field, not exclusive access."
+    },
+    {
+      "id": "cs-threading-0006",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 3,
+      "tags": ["threading", "lock", "monitor"],
+      "prompt": "The classic `lock (obj)` statement compiles to `Enter` and `Exit` calls on which class?",
+      "answer": "Monitor",
+      "distractors": ["Mutex", "Interlocked", "Semaphore"],
+      "explanation": "`lock` becomes `Monitor.Enter` plus `Monitor.Exit` in a `finally`, so the lock is released even if the body throws. .NET 9 added a dedicated `System.Threading.Lock` type that `lock` uses when you lock on one of those instead."
+    },
+    {
+      "id": "cs-threading-0007",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "lock", "best-practice"],
+      "prompt": "Why should you lock on a private object rather than on `this`, a `Type` or a string literal?",
+      "answer": "Code outside your class can lock the same publicly reachable object, causing unexpected contention or deadlocks; a private object is only locked by your code.",
+      "distractors": [
+        "Locking on `this` doesn't compile.",
+        "Strings and `this` are value types, so each lock gets a copy.",
+        "A private object makes the lock faster because it's on the stack."
+      ],
+      "recall": "self",
+      "explanation": "Interned string literals and `typeof(X)` are shared across the whole process, and `this` is visible to every caller. Use `private readonly object _gate = new();` (or a `Lock` in .NET 9+)."
+    },
+    {
+      "id": "cs-threading-0008",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "deadlock", "lock-ordering"],
+      "prompt": "Thread 1 holds lock A and waits for lock B, while thread 2 holds B and waits for A. What is the standard way to prevent this?",
+      "answer": "Always acquire the locks in the same order",
+      "accepted": ["same lock order", "lock ordering", "consistent lock order", "acquire locks in a consistent order"],
+      "distractors": ["Mark the locked fields volatile", "Use lock(this) instead", "Call Thread.Sleep between the two locks"],
+      "explanation": "That's a deadlock caused by acquiring locks in opposite orders. If every thread always takes A before B, the circular wait can't form. Timeouts (`Monitor.TryEnter`) are a fallback; sleeping only makes it rarer."
+    },
+    {
+      "id": "cs-threading-0009",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 3,
+      "tags": ["threading", "lock", "async"],
+      "prompt": "Can you use `await` inside a `lock` block?",
+      "answer": "No",
+      "distractors": ["Yes", "Yes, if you use ConfigureAwait(false)", "Yes, but only in ASP.NET Core"],
+      "explanation": "It's a compile error: a monitor is owned by a thread, and after an `await` the method may resume on a different thread, which couldn't release it. For async code use `SemaphoreSlim(1, 1)` with `await WaitAsync()` and `Release()` in a `finally`."
+    },
+    {
+      "id": "cs-threading-0010",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "semaphoreslim", "async", "throttling"],
+      "prompt": "Which type limits how many callers can use a resource at once and supports async waiting with `WaitAsync()`?",
+      "answer": "SemaphoreSlim",
+      "distractors": ["Mutex", "Monitor", "ReaderWriterLockSlim"],
+      "explanation": "`new SemaphoreSlim(4)` lets four in at a time; `new SemaphoreSlim(1, 1)` is an async-friendly lock. `Mutex` and `Monitor` are thread-owned and can't be awaited."
+    },
+    {
+      "id": "cs-threading-0011",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 3,
+      "tags": ["threading", "mutex", "cross-process"],
+      "prompt": "Which synchronisation primitive can be given a name and shared across processes, e.g. to make an app single-instance?",
+      "answer": "Mutex",
+      "distractors": ["Monitor", "SemaphoreSlim", "Interlocked"],
+      "explanation": "A named `Mutex` is an OS kernel object, so two processes opening `new Mutex(false, \"MyApp\")` share it. That makes it much slower than `lock`, which only works inside one process. (Named `Semaphore` also exists, but `SemaphoreSlim` is in-process only.)"
+    },
+    {
+      "id": "cs-threading-0012",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 3,
+      "tags": ["threading", "readerwriterlockslim"],
+      "prompt": "Which lock type lets many threads read at the same time but gives a writer exclusive access?",
+      "answer": "ReaderWriterLockSlim",
+      "distractors": ["SemaphoreSlim", "Mutex", "SpinLock"],
+      "explanation": "`ReaderWriterLockSlim` has `EnterReadLock` (shared) and `EnterWriteLock` (exclusive). It only pays off when reads vastly outnumber writes and the locked work is long enough; otherwise a plain `lock` is often faster."
+    },
+    {
+      "id": "cs-threading-0013",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 4,
+      "tags": ["threading", "volatile", "memory-model"],
+      "prompt": "Which field modifier stops the compiler and JIT from caching a field's value or reordering its reads and writes, so other threads see the latest value?",
+      "answer": "volatile",
+      "distractors": ["readonly", "const", "static"],
+      "explanation": "`volatile` is about *visibility and ordering* of one field, e.g. a `_stopRequested` flag a loop polls. It does not make compound operations like `++` atomic. Most code should prefer `lock` or `Interlocked`, which also give these guarantees."
+    },
+    {
+      "id": "cs-threading-0014",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "concurrent-collections"],
+      "prompt": "Which thread-safe collection should replace `Dictionary<TKey, TValue>` when several threads read and write it?",
+      "answer": "ConcurrentDictionary<TKey, TValue>",
+      "accepted": ["ConcurrentDictionary", "ConcurrentDictionary<TKey,TValue>"],
+      "distractors": ["SortedDictionary<TKey, TValue>", "ImmutableDictionary<TKey, TValue>", "Hashtable"],
+      "explanation": "`ConcurrentDictionary` uses fine-grained locking and offers atomic helpers like `GetOrAdd` and `AddOrUpdate`. Note `GetOrAdd`'s factory may run more than once under contention. `ImmutableDictionary` is safe to share but every change creates a new instance."
+    },
+    {
+      "id": "cs-threading-0015",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 1,
+      "tags": ["threading", "list", "thread-safety"],
+      "prompt": "Is `List<T>` safe for multiple threads to `Add` to at the same time?",
+      "answer": "No",
+      "distractors": ["Yes", "Yes, as long as no thread removes items", "Only if T is a value type"],
+      "explanation": "Concurrent `Add`s can lose items, corrupt the internal array during a resize, or throw. Standard collections are only safe for concurrent *reads* with no writers. Use a `lock`, `ConcurrentBag<T>`/`ConcurrentQueue<T>`, or collect per-thread and merge."
+    },
+    {
+      "id": "cs-threading-0016",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 2,
+      "tags": ["threading", "thread-vs-task", "thread-pool"],
+      "prompt": "What is the difference between a `Thread` and a `Task`?",
+      "answer": "A Thread is an OS thread you create and manage directly (expensive); a Task is a unit of work or promise of a result, usually run on pooled threads (or none for I/O), with continuations, exceptions and cancellation.",
+      "distractors": [
+        "They're the same; Task is just the newer name for Thread.",
+        "A Task always gets its own dedicated thread; a Thread shares the pool.",
+        "Threads can return results; Tasks can't."
+      ],
+      "recall": "self",
+      "explanation": "Creating a thread costs about a megabyte of stack plus OS setup, so modern code rarely does it. Tasks are a higher-level abstraction: the thread pool runs CPU work, and I/O tasks don't occupy a thread while waiting."
+    },
+    {
+      "id": "cs-threading-0017",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 3,
+      "tags": ["threading", "parallel", "cpu-bound", "async"],
+      "prompt": "For CPU-bound work on every item in a large in-memory collection, which is designed for it: `Parallel.ForEach` or `Task.WhenAll`?",
+      "answer": "Parallel.ForEach",
+      "distractors": ["Task.WhenAll", "They're equivalent", "A foreach with await inside"],
+      "explanation": "`Parallel.ForEach` partitions the work across cores and limits the degree of parallelism for you. `Task.WhenAll` is for awaiting many *already-running* async operations, typically I/O. For async work with a concurrency cap, use `Parallel.ForEachAsync`."
+    },
+    {
+      "id": "cs-threading-0018",
+      "type": "concept",
+      "topic": "csharp/threading",
+      "difficulty": 4,
+      "tags": ["threading", "thread-local", "threadstatic"],
+      "prompt": "Which attribute gives each thread its own separate copy of a static field?",
+      "answer": "[ThreadStatic]",
+      "accepted": ["ThreadStatic", "ThreadStaticAttribute"],
+      "distractors": ["[NonSerialized]", "[Volatile]", "[MethodImpl(MethodImplOptions.Synchronized)]"],
+      "explanation": "`[ThreadStatic] static int _x;` is per thread (and its initialiser only runs on the first thread, a common gotcha). `ThreadLocal<T>` is the class-based alternative with an initialiser per thread. Neither flows across `await`; `AsyncLocal<T>` does."
+    }
+  ]
+}

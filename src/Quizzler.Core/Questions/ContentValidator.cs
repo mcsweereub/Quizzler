@@ -55,6 +55,16 @@ public static partial class ContentValidator
             if (q.Type == QuestionType.PredictOutput && string.IsNullOrWhiteSpace(q.Code))
                 Issue("predict-output questions require 'code'.");
 
+            if (q.Type == QuestionType.PredictResult)
+            {
+                if (string.IsNullOrWhiteSpace(q.Code)) Issue("predict-result questions require 'code' (the SQL query).");
+                if (string.IsNullOrWhiteSpace(q.Setup)) Issue("predict-result questions require 'setup' (SQL that creates the tables).");
+            }
+            else if (q.Setup is not null || q.Expect is not null)
+            {
+                Issue("'setup' and 'expect' are only for predict-result questions.");
+            }
+
             if (q.Distractors.Count is < MinDistractors or > MaxDistractors)
                 Issue($"Needs {MinDistractors}-{MaxDistractors} distractors (has {q.Distractors.Count}).");
 
