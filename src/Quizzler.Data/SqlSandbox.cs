@@ -4,9 +4,14 @@ using Quizzler.Core.Questions;
 
 namespace Quizzler.Data;
 
-/// <summary>A small table of display values (NULL shown as "NULL"), either a setup table or a query result.</summary>
-public sealed record SqlTable(string Name, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows)
+/// <summary>
+/// A small table of display values (NULL shown as "NULL"), either a setup table or a query result.
+/// <see cref="Indexes"/> lists a setup table's primary key and indexes, e.g. "CREATE INDEX IX_Orders_CustomerId ON Orders (CustomerId)".
+/// </summary>
+public sealed record SqlTable(string Name, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<string>? Indexes = null)
 {
+    public IReadOnlyList<string> IndexList => Indexes ?? [];
+
     /// <summary>The rows in answer format: one per line, values separated by ", ".</summary>
     public string RowsText => Rows.Count == 0
         ? SqlSandbox.NoRows
@@ -17,10 +22,69 @@ public sealed record SqlTable(string Name, IReadOnlyList<string> Columns, IReadO
 /// The outcome of running a predict-result question. <see cref="RowMatters"/> (when analysed) says, per setup table and
 /// row, whether deleting that row would change the query's result: the rows that "take part" in the answer.
 /// </summary>
-public sealed record SqlRun(IReadOnlyList<SqlTable> Tables, SqlTable Result, IReadOnlyList<IReadOnlyList<bool>>? RowMatters)
+public sealed record SqlRun(
+    IReadOnlyList<SqlTable> Tables,
+    SqlTable Result,
+    IReadOnlyList<IReadOnlyList<bool>>? RowMatters,
+    IReadOnlyList<PlanStep> Plan)
 {
-    public string AnswerFor(ResultExpectation expect) =>
-        expect == ResultExpectation.RowCount ? Result.Rows.Count.ToString(CultureInfo.InvariantCulture) : Result.RowsText;
+    /// <summary>The correct answer for this question, worked out from the real result or plan.</summary>
+    public string AnswerFor(Question question) => question.EffectiveExpect switch
+    {
+        ResultExpectation.RowCount => Result.Rows.Count.ToString(CultureInfo.InvariantCulture),
+        ResultExpectation.TableAccess => AccessFor(question.PlanTable).Access!,
+        _ => Result.RowsText,
+    };
+
+    /// <summary>The plan step that reads <paramref name="planTable"/> (or the only table read, when null).</summary>
+    public PlanStep AccessFor(string? planTable)
+    {
+        var reads = Plan.Where(s => s.Table is not null).ToList();
+        var matches = planTable is null ? reads : reads.Where(s => string.Equals(s.Table, planTable, StringComparison.OrdinalIgnoreCase)).ToList();
+        var names = string.Join(", ", reads.Select(s => s.Table));
+        if (matches.Count != 1)
+        {
+            throw new SqlRunException(planTable is null
+                ? $"The plan reads {reads.Count} tables ({names}); set \"planTable\" to the one the question is about."
+                : $"The plan has {matches.Count} reads of '{planTable}' (it reads: {names}). Use the name as it appears in the plan (the alias if there is one).");
+        }
+        return matches[0].Access is null
+            ? throw new SqlRunException($"Can't classify this plan step as one of the table-access answers: {matches[0].Detail}")
+            : matches[0];
+    }
+}
+
+/// <summary>
+/// One line of SQLite's EXPLAIN QUERY PLAN. For lines that read a table, <see cref="Table"/> is the name used in the
+/// plan (the alias, if any) and <see cref="Access"/> is the matching <see cref="TableAccessNames"/> term.
+/// </summary>
+public sealed partial record PlanStep(int Depth, string Detail)
+{
+    public string? Table => Parse() is { Success: true } m ? m.Groups["table"].Value : null;
+
+    public string? Access
+    {
+        get
+        {
+            if (Parse() is not { Success: true } m) return null;
+            var search = m.Groups["op"].Value == "SEARCH";
+            return m.Groups["using"].Value switch
+            {
+                "" => search ? null : TableAccessNames.FullTableScan,
+                "INDEX" => search ? TableAccessNames.IndexSeek : TableAccessNames.FullIndexScan,
+                "COVERING INDEX" => search ? TableAccessNames.CoveringIndexSeek : TableAccessNames.CoveringIndexScan,
+                "INTEGER PRIMARY KEY" or "PRIMARY KEY" when search => TableAccessNames.PrimaryKeySeek,
+                _ => null,
+            };
+        }
+    }
+
+    // e.g. "SCAN Orders", "SEARCH o USING COVERING INDEX IX_Orders_CustomerId (CustomerId=?)",
+    // "SEARCH Orders USING INTEGER PRIMARY KEY (rowid=?)". "USING AUTOMATIC ..." deliberately doesn't match.
+    [System.Text.RegularExpressions.GeneratedRegex(@"^(?<op>SCAN|SEARCH) (?<table>\S+)(?: USING (?<using>COVERING INDEX|INDEX|INTEGER PRIMARY KEY|PRIMARY KEY)\b.*)?$")]
+    private static partial System.Text.RegularExpressions.Regex Pattern();
+
+    private System.Text.RegularExpressions.Match? Parse() => Pattern().Match(Detail) is { Success: true } m ? m : null;
 }
 
 public sealed class SqlRunException(string message, Exception? inner = null) : Exception(message, inner);
@@ -56,11 +120,12 @@ public static class SqlSandbox
         foreach (var name in tableNames)
         {
             var (table, ids) = ReadTable(connection, name);
-            tables.Add(table);
+            tables.Add(table with { Indexes = ReadIndexes(connection, name) });
             rowIds.Add(ids);
         }
 
         var result = Query(connection, query, "Result");
+        var plan = ReadPlan(connection, query);
 
         List<IReadOnlyList<bool>>? matters = null;
         if (analyseRows)
@@ -81,8 +146,55 @@ public static class SqlSandbox
             }
         }
 
-        return new SqlRun(tables, result, matters);
+        return new SqlRun(tables, result, matters, plan);
     }
+
+    private static List<PlanStep> ReadPlan(SqliteConnection connection, string query)
+    {
+        var rows = new List<(int Id, int Parent, string Detail)>();
+        try
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "EXPLAIN QUERY PLAN " + query;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) rows.Add((reader.GetInt32(0), reader.GetInt32(1), reader.GetString(3)));
+        }
+        catch (SqliteException ex)
+        {
+            throw new SqlRunException($"Query plan failed: {ex.Message}", ex);
+        }
+
+        var depth = new Dictionary<int, int>();
+        return rows.Select(r =>
+        {
+            var d = depth.TryGetValue(r.Parent, out var parentDepth) ? parentDepth + 1 : 0;
+            depth[r.Id] = d;
+            return new PlanStep(d, r.Detail);
+        }).ToList();
+    }
+
+    private static List<string> ReadIndexes(SqliteConnection connection, string table)
+    {
+        var result = new List<string>();
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = $"SELECT name FROM pragma_table_info({QuoteLiteral(table)}) WHERE pk > 0 ORDER BY pk";
+            using var reader = cmd.ExecuteReader();
+            var pk = new List<string>();
+            while (reader.Read()) pk.Add(reader.GetString(0));
+            if (pk.Count > 0) result.Add($"PRIMARY KEY ({string.Join(", ", pk)})");
+        }
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "SELECT sql FROM sqlite_schema WHERE type = 'index' AND sql IS NOT NULL AND tbl_name = $t ORDER BY rowid";
+            cmd.Parameters.AddWithValue("$t", table);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) result.Add(System.Text.RegularExpressions.Regex.Replace(reader.GetString(0), @"\s+", " ").Trim());
+        }
+        return result;
+    }
+
+    private static string QuoteLiteral(string s) => "'" + s.Replace("'", "''") + "'";
 
     /// <summary>Order-insensitive, so a query without ORDER BY can't look "changed" just because rows moved.</summary>
     private static string Fingerprint(SqlTable t) => string.Join('\n', t.Rows.Select(r => string.Join('\u001F', r)).Order(StringComparer.Ordinal));

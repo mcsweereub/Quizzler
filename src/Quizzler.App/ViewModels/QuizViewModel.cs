@@ -48,8 +48,11 @@ public sealed record QuestionView(
 }
 
 /// <summary>Result panel shown after answering.</summary>
-public sealed record FeedbackView(AnswerState State, string Answer, bool AnswerIsCode, bool ShowAnswer, string Explanation, bool CanOverride, SqlTable? SqlResult = null)
+public sealed record FeedbackView(
+    AnswerState State, string Answer, bool AnswerIsCode, bool ShowAnswer, string Explanation, bool CanOverride,
+    SqlTable? SqlResult = null, string? PlanText = null)
 {
+    public bool HasPlan => PlanText is not null;
     public bool IsCorrect => State == AnswerState.Correct;
     public bool IsIncorrect => State == AnswerState.Incorrect;
     public bool NeedsSelfGrade => State == AnswerState.NeedsSelfGrade;
@@ -301,16 +304,27 @@ public sealed class QuizViewModel : ObservableObject
         var revealAnswer = (showAnswer && pending.State != AnswerState.Correct) || pending.State == AnswerState.NeedsSelfGrade;
 
         // SQL: the result grid shows the rows, so only a row count needs repeating as text.
+        // Plan questions show the query plan instead of the result and row highlights.
+        SqlTable? sqlResult = null;
+        string? planText = null;
         if (_sqlRun is not null)
         {
-            if (q.EffectiveExpect == ResultExpectation.Rows) revealAnswer = false;
             answerIsCode = false;
-            var tables = _sqlRun.Tables.Select((t, i) => new SqlTableItem(t, _sqlRun.RowMatters?[i])).ToList();
-            SqlTables.Clear();
-            foreach (var t in tables) SqlTables.Add(t);
+            if (q.EffectiveExpect == ResultExpectation.TableAccess)
+            {
+                planText = string.Join('\n', _sqlRun.Plan.Select(s => new string(' ', s.Depth * 3) + s.Detail));
+            }
+            else
+            {
+                if (q.EffectiveExpect == ResultExpectation.Rows) revealAnswer = false;
+                sqlResult = _sqlRun.Result;
+                var tables = _sqlRun.Tables.Select((t, i) => new SqlTableItem(t, _sqlRun.RowMatters?[i])).ToList();
+                SqlTables.Clear();
+                foreach (var t in tables) SqlTables.Add(t);
+            }
         }
 
-        Feedback = new FeedbackView(pending.State, q.Answer, answerIsCode, revealAnswer, q.Explanation, pending.CanOverride, _sqlRun?.Result);
+        Feedback = new FeedbackView(pending.State, q.Answer, answerIsCode, revealAnswer, q.Explanation, pending.CanOverride, sqlResult, planText);
         Mode = QuizMode.Feedback;
     }
 
@@ -339,12 +353,16 @@ public sealed class QuizViewModel : ObservableObject
         var item = _session.Current!;
         var q = item.Question;
         var isMc = item.Stage == CardStage.MultipleChoice;
-        var isRowCount = q.Type == QuestionType.PredictResult && q.EffectiveExpect == ResultExpectation.RowCount;
-        var multiLine = (q.Type != QuestionType.Concept && !isRowCount) || q.EffectiveRecall == RecallGrading.Self;
+        var isSql = q.Type == QuestionType.PredictResult;
+        var isRowCount = isSql && q.EffectiveExpect == ResultExpectation.RowCount;
+        var isPlan = isSql && q.EffectiveExpect == ResultExpectation.TableAccess;
+        var isSingleValue = isRowCount || isPlan;
+        var multiLine = (q.Type != QuestionType.Concept && !isSingleValue) || q.EffectiveRecall == RecallGrading.Self;
         var hint = q.Type switch
         {
             QuestionType.PredictOutput => "Type the exact output. Ctrl+Enter to submit.",
             QuestionType.PredictResult when isRowCount => "Type the number of rows and press Enter.",
+            QuestionType.PredictResult when isPlan => "Type how the table is read (e.g. Full table scan, Index seek) and press Enter.",
             QuestionType.PredictResult => "Type the result: one row per line, values separated by commas, NULL for nulls. Ctrl+Enter to submit.",
             QuestionType.PickTheCode => "Write the code. You'll compare it with the answer. Ctrl+Enter to submit.",
             _ when q.EffectiveRecall == RecallGrading.Self => "Answer in your own words. You'll compare with the answer. Ctrl+Enter to submit.",
@@ -370,7 +388,7 @@ public sealed class QuizViewModel : ObservableObject
             for (var i = 0; i < choices.Options.Count; i++)
             {
                 var text = choices.Options[i];
-                var isCode = q.Type is QuestionType.PickTheCode || (q.Type is QuestionType.PredictResult && !isRowCount) || text.Contains('\n');
+                var isCode = q.Type is QuestionType.PickTheCode || (isSql && !isSingleValue) || text.Contains('\n');
                 Options.Add(new OptionViewModel(i, text, isCode));
             }
         }

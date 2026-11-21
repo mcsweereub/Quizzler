@@ -15,6 +15,8 @@ It sits next to the clock, shows how many questions are due, and reminds you whe
   - *Pick the code*: choose the snippet that correctly does something.
   - *Predict the result*: small tables are shown as grids next to a SQL query; say what it returns. After
     answering you see the real result, with the rows that affected it highlighted and the rest dimmed.
+    Index questions ask how the database will read a table (full scan, index seek, covering index...) and
+    show the real query plan afterwards.
 - **Every answer key is checked by running it.** C# snippets are compiled and run with Roslyn, and SQL queries
   run in an in-memory SQLite database, during tests, so a wrong answer key fails the build.
 - **New-per-day cap** (default 10) so a big batch of new questions doesn't swamp you.

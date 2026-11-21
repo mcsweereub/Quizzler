@@ -47,8 +47,12 @@
           "description": "predict-result only: SQL (SQLite) that creates and fills the tables, shown to the user as grids."
         },
         "expect": {
-          "enum": ["rows", "row-count"],
-          "description": "predict-result only: whether the answer is the result rows (default; one per line, values comma-separated) or the number of rows."
+          "enum": ["rows", "row-count", "table-access"],
+          "description": "predict-result only: the result rows (default; one per line, values comma-separated), the number of rows, or how a table is read according to the query plan (Full table scan, Full index scan, Covering index scan, Index seek, Covering index seek, Primary key seek)."
+        },
+        "planTable": {
+          "type": "string",
+          "description": "table-access only: the table the question is about, as named in the plan (its alias if aliased). Needed when the query reads several tables."
         },
         "answer": { "type": "string", "minLength": 1 },
         "accepted": {

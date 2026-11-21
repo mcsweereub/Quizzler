@@ -59,10 +59,23 @@ public static partial class ContentValidator
             {
                 if (string.IsNullOrWhiteSpace(q.Code)) Issue("predict-result questions require 'code' (the SQL query).");
                 if (string.IsNullOrWhiteSpace(q.Setup)) Issue("predict-result questions require 'setup' (SQL that creates the tables).");
+
+                if (q.EffectiveExpect == ResultExpectation.TableAccess)
+                {
+                    var vocabulary = TableAccessNames.All;
+                    if (!vocabulary.Any(v => AnswerChecker.Matches(q.Type, v, q.Answer)))
+                        Issue($"table-access answers must be one of: {string.Join(", ", vocabulary)}.");
+                    foreach (var d in q.Distractors.Where(d => !vocabulary.Any(v => AnswerChecker.Matches(q.Type, v, d))))
+                        Issue($"table-access distractor '{d}' must be one of: {string.Join(", ", vocabulary)}.");
+                }
+                else if (q.PlanTable is not null)
+                {
+                    Issue("'planTable' is only for \"expect\": \"table-access\" questions.");
+                }
             }
-            else if (q.Setup is not null || q.Expect is not null)
+            else if (q.Setup is not null || q.Expect is not null || q.PlanTable is not null)
             {
-                Issue("'setup' and 'expect' are only for predict-result questions.");
+                Issue("'setup', 'expect' and 'planTable' are only for predict-result questions.");
             }
 
             if (q.Distractors.Count is < MinDistractors or > MaxDistractors)

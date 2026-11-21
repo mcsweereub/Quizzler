@@ -131,7 +131,8 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
         else
         {
             var isRowCount = q.Type == QuestionType.PredictResult && q.EffectiveExpect == ResultExpectation.RowCount;
-            var multiLine = q.Type != QuestionType.Concept && !isRowCount;
+            var isPlan = q.Type == QuestionType.PredictResult && q.EffectiveExpect == ResultExpectation.TableAccess;
+            var multiLine = q.Type != QuestionType.Concept && !isRowCount && !isPlan;
             response = multiLine
                 ? ReadMultiLine(q.Type switch
                 {
@@ -139,7 +140,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
                     QuestionType.PredictResult => "Type the result rows, values separated by commas, NULL for nulls",
                     _ => "Write your answer",
                 })
-                : ReadLine(isRowCount ? "Number of rows: " : "Your answer: ");
+                : ReadLine(isRowCount ? "Number of rows: " : isPlan ? "How is the table read (e.g. Full table scan, Index seek)? " : "Your answer: ");
             if (response is null || IsQuit(response)) return (Next.Quit, false);
 
             var result = AnswerChecker.Check(q, response);
@@ -167,7 +168,13 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
 
         stopwatch.Stop();
 
-        if (sql is not null)
+        if (sql is not null && q.EffectiveExpect == ResultExpectation.TableAccess)
+        {
+            var plan = string.Join('\n', sql.Plan.Select(s => new string(' ', s.Depth * 3) + s.Detail));
+            AnsiConsole.Write(CodePanel(plan, "Query plan (SQLite)"));
+            AnsiConsole.MarkupLine("[grey]SCAN reads every row; SEARCH jumps to matching rows via the index; COVERING means no trip back to the table.[/]");
+        }
+        else if (sql is not null)
         {
             var count = sql.Result.Rows.Count == 1 ? "1 row" : $"{sql.Result.Rows.Count} rows";
             AnsiConsole.Write(SqlGrid(sql.Result, null, $"Result · {count}"));
@@ -234,6 +241,8 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
                 return style == "" ? cell : $"[{style}]{cell}[/]";
             }).ToArray());
         }
+        if (table.IndexList.Count > 0)
+            grid.Caption($"[grey]{Markup.Escape(string.Join("\n", table.IndexList))}[/]");
         return grid;
     }
 

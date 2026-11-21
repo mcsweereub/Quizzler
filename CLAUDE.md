@@ -135,7 +135,8 @@ file if the topic exists. New files start with:
 | `prompt` | yes | The question. Markdown inline code with backticks is fine. |
 | `code` | predict-output, predict-result (optional otherwise) | C# shown with the prompt, or the SQL query for predict-result. |
 | `setup` | predict-result only | SQL that creates and fills the tables. Shown to the user as grids. |
-| `expect` | predict-result only, optional | `"row-count"` when the answer is just the number of rows; default is the rows. |
+| `expect` | predict-result only, optional | `"row-count"` when the answer is just the number of rows; `"table-access"` for how the query plan reads a table; default is the rows. |
+| `planTable` | table-access only, optional | Which table the plan question is about, as named in the plan (its alias). Needed for multi-table queries. |
 | `answer` | yes | The single canonical correct answer. |
 | `accepted` | optional | Other typed forms that should count as correct: abbreviations, synonyms. Case, whitespace, surrounding backticks/quotes, trailing `.` and trailing `()` are already ignored, so don't list those variants. |
 | `distractors` | yes | 3 is ideal (2-5 allowed). Up to 3 are shown at random. |
@@ -193,6 +194,20 @@ grids, and after answering shows the real result and highlights which rows affec
   but not row order.
 - **Multi-row answers need `ORDER BY`** (the verifier enforces it), because SQL doesn't guarantee row order.
 - For "how many rows?" questions set `"expect": "row-count"` and make `answer` the number; no ORDER BY needed.
+- **Index / query-plan questions**: set `"expect": "table-access"`. `setup` adds `CREATE INDEX` statements (the app
+  lists each table's primary key and indexes under its grid). The answer and distractors must come from this
+  vocabulary, which the verifier checks against SQLite's `EXPLAIN QUERY PLAN`: `Full table scan`, `Full index scan`,
+  `Covering index scan`, `Index seek`, `Covering index seek`, `Primary key seek`. After answering, the app shows the plan.
+  - If the query reads more than one table, set `"planTable"` to the name the plan uses: **the alias** if the
+    query has one (`"o"` for `Orders o`).
+  - Don't guess plans: the optimiser can surprise you (e.g. join order flips depending on the WHERE clause, or
+    `SELECT *` on a table whose columns are all in an index is "covering"). Write the question, run validate, and
+    rewrite the question if the real plan isn't the one you meant to teach.
+  - SQLite has no statistics here, so it uses an index whenever it can. Don't write questions about selectivity,
+    parameter sniffing, key lookups vs scans by cost, or `LIKE 'abc%'` seeks (SQLite's case-insensitive LIKE won't
+    seek a normal index). Those stay as `concept` questions.
+  - Good topics: functions on columns (sargability), leading wildcards, composite index column order, covering
+    vs non-covering, expression indexes, indexing foreign keys for joins, primary-key lookups.
 - The best questions are the classic traps where seeing the rows helps: LEFT JOIN + WHERE on the right table,
   `NOT IN` with a NULL, `COUNT(*)` vs `COUNT(col)`, join fan-out inflating SUM, `<>` excluding NULLs.
 - Distractors are results from a specific misconception (inner instead of left join, filtering before grouping).

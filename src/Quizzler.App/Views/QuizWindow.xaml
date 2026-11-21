@@ -235,6 +235,14 @@
                                 <views:CodeViewer Code="{Binding Feedback.Answer}" />
                             </Border>
                         </StackPanel>
+                        <StackPanel Margin="0,12,0,0" Visibility="{Binding Feedback.HasPlan, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="QUERY PLAN (SQLITE)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+                            <Border Style="{StaticResource CodeFrame}" Background="{DynamicResource SurfaceBrush}" Padding="12,8">
+                                <TextBlock Text="{Binding Feedback.PlanText}" FontFamily="{StaticResource CodeFont}" FontSize="13" TextWrapping="Wrap" />
+                            </Border>
+                            <TextBlock Margin="0,8,0,0" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="SCAN reads every row; SEARCH uses the index to jump to matching rows; COVERING means the index alone has every column needed. In SQL Server terms: full table scan ≈ clustered index scan, primary key seek ≈ clustered index seek, a non-covering index seek ≈ index seek + key lookup." />
+                        </StackPanel>
                         <StackPanel Margin="0,12,0,0" Visibility="{Binding Feedback.HasSqlResult, Converter={StaticResource BoolToVis}}">
                             <views:SqlTableView Table="{Binding Feedback.SqlResult}" Caption="{Binding Feedback.SqlResultCaption}" />
                             <TextBlock Margin="0,8,0,0" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"

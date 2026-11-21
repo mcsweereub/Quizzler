@@ -109,7 +109,23 @@ public sealed class SqlTableView : Border
         };
         caption.SetResourceReference(TextBlock.ForegroundProperty, "MutedTextBrush");
 
-        Child = new StackPanel { Children = { caption, frame } };
+        var panel = new StackPanel { Children = { caption, frame } };
+        foreach (var index in table.IndexList)
+        {
+            var line = new TextBlock
+            {
+                Text = index,
+                FontFamily = codeFont,
+                FontSize = 12,
+                Margin = new Thickness(0, 4, 0, 0),
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 420,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            line.SetResourceReference(TextBlock.ForegroundProperty, "MutedTextBrush");
+            panel.Children.Add(line);
+        }
+        Child = panel;
     }
 
     private static Border Cell(string text, int column, int row, bool isLastRow)

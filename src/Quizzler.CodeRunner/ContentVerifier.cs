@@ -80,7 +80,15 @@ public static class ContentVerifier
         }
 
         var messages = new List<string>();
-        var actual = run.AnswerFor(q.EffectiveExpect);
+        string actual;
+        try
+        {
+            actual = run.AnswerFor(q);
+        }
+        catch (SqlRunException ex)
+        {
+            return [ex.Message];
+        }
         if (!AnswerChecker.Matches(QuestionType.PredictResult, q.Answer, actual))
             messages.Add($"Answer key is wrong. Expected:\n{IndentResult(q.Answer)}\n  but the query returned:\n{IndentResult(actual)}");
 

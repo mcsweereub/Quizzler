@@ -26,6 +26,26 @@ public enum ResultExpectation
 
     /// <summary>Just the number of rows returned.</summary>
     RowCount,
+
+    /// <summary>
+    /// How the database reads a table, from its query plan: one of <see cref="TableAccessNames.All"/>
+    /// (e.g. "Index seek", "Full table scan"). See <see cref="Question.PlanTable"/>.
+    /// </summary>
+    TableAccess,
+}
+
+/// <summary>The vocabulary for <see cref="ResultExpectation.TableAccess"/> answers.</summary>
+public static class TableAccessNames
+{
+    public const string FullTableScan = "Full table scan";
+    public const string FullIndexScan = "Full index scan";
+    public const string CoveringIndexScan = "Covering index scan";
+    public const string IndexSeek = "Index seek";
+    public const string CoveringIndexSeek = "Covering index seek";
+    public const string PrimaryKeySeek = "Primary key seek";
+
+    public static IReadOnlyList<string> All { get; } =
+        [FullTableScan, FullIndexScan, CoveringIndexScan, IndexSeek, CoveringIndexSeek, PrimaryKeySeek];
 }
 
 /// <summary>How a typed (recall-stage) answer is graded.</summary>
@@ -69,6 +89,12 @@ public sealed record Question
     public ResultExpectation? Expect { get; init; }
 
     public ResultExpectation EffectiveExpect => Expect ?? ResultExpectation.Rows;
+
+    /// <summary>
+    /// table-access only: which table's access the question is about, as named in the plan (its alias if the query
+    /// gives it one). Optional when the query reads a single table.
+    /// </summary>
+    public string? PlanTable { get; init; }
 
     /// <summary>The canonical correct answer. Shown as the right option in multiple-choice mode.</summary>
     public string Answer { get; init; } = "";

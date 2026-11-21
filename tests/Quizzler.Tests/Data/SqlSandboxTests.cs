@@ -136,6 +136,77 @@ public class SqlSandboxTests
         Assert.Contains(ContentVerifier.VerifySql(q), m => m.StartsWith("SQL error"));
     }
 
+    [Theory]
+    [InlineData("SCAN Orders", "Orders", TableAccessNames.FullTableScan)]
+    [InlineData("SCAN o USING INDEX IX_A", "o", TableAccessNames.FullIndexScan)]
+    [InlineData("SCAN People USING COVERING INDEX IX_People_Name", "People", TableAccessNames.CoveringIndexScan)]
+    [InlineData("SEARCH Orders USING INDEX IX_Orders_CustomerId (CustomerId=?)", "Orders", TableAccessNames.IndexSeek)]
+    [InlineData("SEARCH o USING COVERING INDEX IX (CustomerId=?)", "o", TableAccessNames.CoveringIndexSeek)]
+    [InlineData("SEARCH Orders USING INTEGER PRIMARY KEY (rowid=?)", "Orders", TableAccessNames.PrimaryKeySeek)]
+    public void Plan_steps_are_classified(string detail, string table, string access)
+    {
+        var step = new PlanStep(0, detail);
+        Assert.Equal(table, step.Table);
+        Assert.Equal(access, step.Access);
+    }
+
+    [Theory]
+    [InlineData("SEARCH o USING AUTOMATIC COVERING INDEX (CustomerId=?)")]
+    [InlineData("USE TEMP B-TREE FOR ORDER BY")]
+    public void Unfamiliar_plan_steps_are_not_classified(string detail)
+    {
+        Assert.Null(new PlanStep(0, detail).Access);
+    }
+
+    private const string IndexedSetup = Setup + "\nCREATE INDEX IX_Orders_CustomerId ON Orders (CustomerId);";
+
+    [Fact]
+    public void Real_plans_are_classified_per_table()
+    {
+        // Filtering on c.Name makes Customers the outer table, so Orders is reached through its CustomerId index.
+        var run = SqlSandbox.Run(IndexedSetup, "SELECT c.Name, o.Total FROM Customers c JOIN Orders o ON o.CustomerId = c.Id WHERE c.Name = 'Ada'");
+        Assert.Equal(TableAccessNames.FullTableScan, run.AccessFor("c").Access);
+        Assert.Equal(TableAccessNames.IndexSeek, run.AccessFor("o").Access);
+    }
+
+    [Fact]
+    public void A_multi_table_plan_needs_plan_table()
+    {
+        var run = SqlSandbox.Run(IndexedSetup, "SELECT * FROM Customers c JOIN Orders o ON o.CustomerId = c.Id");
+        Assert.Contains("planTable", Assert.Throws<SqlRunException>(() => run.AccessFor(null)).Message);
+        Assert.Throws<SqlRunException>(() => run.AccessFor("Orders")); // the plan calls it "o"
+    }
+
+    [Fact]
+    public void Setup_tables_list_their_primary_key_and_indexes()
+    {
+        var run = SqlSandbox.Run(IndexedSetup, "SELECT 1");
+        Assert.Equal(["PRIMARY KEY (Id)"], run.Tables[0].IndexList);
+        Assert.Equal(["PRIMARY KEY (Id)", "CREATE INDEX IX_Orders_CustomerId ON Orders (CustomerId)"], run.Tables[1].IndexList);
+    }
+
+    [Fact]
+    public void Verifier_checks_table_access_answers_against_the_plan()
+    {
+        var right = Sql("SELECT * FROM Orders WHERE Id = 2", TableAccessNames.PrimaryKeySeek,
+            [TableAccessNames.IndexSeek, TableAccessNames.FullTableScan], ResultExpectation.TableAccess);
+        Assert.Empty(ContentVerifier.VerifySql(right));
+
+        var wrong = right with { Answer = TableAccessNames.IndexSeek, Distractors = [TableAccessNames.PrimaryKeySeek, TableAccessNames.FullTableScan] };
+        var messages = ContentVerifier.VerifySql(wrong);
+        Assert.Contains(messages, m => m.Contains("Answer key is wrong") && m.Contains(TableAccessNames.PrimaryKeySeek));
+        Assert.Contains(messages, m => m.Contains("Distractor matches"));
+    }
+
+    [Fact]
+    public void Validator_requires_table_access_answers_from_the_vocabulary()
+    {
+        var q = Sql("SELECT * FROM Orders", "Clustered scan", ["Index seek", "Hash join"], ResultExpectation.TableAccess);
+        var issues = ContentValidator.Validate([new LoadedQuestion(q, "test.json")]);
+        Assert.Contains(issues, i => i.Message.StartsWith("table-access answers must be"));
+        Assert.Contains(issues, i => i.Message.Contains("'Hash join'"));
+    }
+
     [Fact]
     public void Validator_requires_setup_and_query_for_predict_result()
     {
