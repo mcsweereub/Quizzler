@@ -202,11 +202,16 @@ public sealed class QuizDatabase : IQuizStore
 
         Execute(connection, tx,
             """
-            INSERT INTO reviews (question_id, reviewed_at, stage, rating, response, elapsed_ms)
-            VALUES ($id, $at, $stage, $rating, $response, $elapsed)
+            INSERT INTO reviews (question_id, reviewed_at, stage, rating, response, elapsed_ms,
+                                 grade, interval_before, due_before, interval_after, client, question_hash)
+            VALUES ($id, $at, $stage, $rating, $response, $elapsed,
+                    $grade, $ivlBefore, $dueBefore, $ivlAfter, $client,
+                    (SELECT content_hash FROM questions WHERE id = $id))
             """,
             ("$id", log.QuestionId), ("$at", log.ReviewedAt.ToUnixTimeMilliseconds()), ("$stage", log.Stage.ToString()),
-            ("$rating", log.Rating.ToString()), ("$response", log.Response), ("$elapsed", (long)log.Elapsed.TotalMilliseconds));
+            ("$rating", log.Rating.ToString()), ("$response", log.Response), ("$elapsed", (long)log.Elapsed.TotalMilliseconds),
+            ("$grade", log.Grade?.ToString()), ("$ivlBefore", log.IntervalBeforeDays),
+            ("$dueBefore", log.DueBefore?.ToUnixTimeMilliseconds()), ("$ivlAfter", log.IntervalAfterDays), ("$client", log.Client));
 
         tx.Commit();
     }
@@ -216,8 +221,9 @@ public sealed class QuizDatabase : IQuizStore
         using var connection = Connect();
         using var cmd = Command(connection, null,
             """
-            SELECT question_id, reviewed_at, stage, rating, response, elapsed_ms
-            FROM reviews WHERE reviewed_at >= $since ORDER BY reviewed_at
+            SELECT question_id, reviewed_at, stage, rating, response, elapsed_ms,
+                   grade, interval_before, due_before, interval_after, client, question_hash
+            FROM reviews WHERE reviewed_at >= $since ORDER BY reviewed_at, id
             """,
             ("$since", since.ToUnixTimeMilliseconds()));
         using var reader = cmd.ExecuteReader();
@@ -230,8 +236,49 @@ public sealed class QuizDatabase : IQuizStore
                 Enum.Parse<CardStage>(reader.GetString(2)),
                 Enum.Parse<Rating>(reader.GetString(3)),
                 reader.IsDBNull(4) ? null : reader.GetString(4),
-                TimeSpan.FromMilliseconds(reader.GetInt64(5))));
+                TimeSpan.FromMilliseconds(reader.GetInt64(5)))
+            {
+                Grade = reader.IsDBNull(6) ? null : Enum.Parse<ReviewGrade>(reader.GetString(6)),
+                IntervalBeforeDays = reader.IsDBNull(7) ? null : reader.GetDouble(7),
+                DueBefore = reader.IsDBNull(8) ? null : FromMs(reader.GetInt64(8)),
+                IntervalAfterDays = reader.IsDBNull(9) ? null : reader.GetDouble(9),
+                Client = reader.IsDBNull(10) ? null : reader.GetString(10),
+                QuestionHash = reader.IsDBNull(11) ? null : reader.GetString(11),
+            });
         }
+        return result;
+    }
+
+    // ---------------------------------------------------------------- events
+
+    public void LogEvent(string kind, string? detail, DateTimeOffset at)
+    {
+        using var connection = Connect();
+        Execute(connection, null, "INSERT INTO events (at, kind, detail) VALUES ($at, $kind, $detail)",
+            ("$at", at.ToUnixTimeMilliseconds()), ("$kind", kind), ("$detail", detail));
+    }
+
+    public IReadOnlyList<StudyEventLog> GetEventsSince(DateTimeOffset since)
+    {
+        using var connection = Connect();
+        using var cmd = Command(connection, null,
+            "SELECT at, kind, detail FROM events WHERE at >= $since ORDER BY at, id",
+            ("$since", since.ToUnixTimeMilliseconds()));
+        using var reader = cmd.ExecuteReader();
+        var result = new List<StudyEventLog>();
+        while (reader.Read())
+            result.Add(new StudyEventLog(FromMs(reader.GetInt64(0)), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2)));
+        return result;
+    }
+
+    /// <summary>The content hash each active question has now, to compare with <see cref="ReviewLog.QuestionHash"/>.</summary>
+    public IReadOnlyDictionary<string, string> GetQuestionHashes()
+    {
+        using var connection = Connect();
+        using var cmd = Command(connection, null, "SELECT id, content_hash FROM questions WHERE retired = 0");
+        using var reader = cmd.ExecuteReader();
+        var result = new Dictionary<string, string>();
+        while (reader.Read()) result[reader.GetString(0)] = reader.GetString(1);
         return result;
     }
 

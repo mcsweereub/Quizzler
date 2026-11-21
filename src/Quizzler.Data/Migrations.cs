@@ -64,6 +64,24 @@ internal static class Migrations
             value TEXT NOT NULL
         );
         """,
+
+        // 2: richer review history (grader verdict, intervals, question version, client) and usage events.
+        """
+        ALTER TABLE reviews ADD COLUMN grade TEXT;
+        ALTER TABLE reviews ADD COLUMN interval_before REAL;
+        ALTER TABLE reviews ADD COLUMN due_before INTEGER;
+        ALTER TABLE reviews ADD COLUMN interval_after REAL;
+        ALTER TABLE reviews ADD COLUMN client TEXT;
+        ALTER TABLE reviews ADD COLUMN question_hash TEXT;
+
+        CREATE TABLE events (
+            id     INTEGER PRIMARY KEY AUTOINCREMENT,
+            at     INTEGER NOT NULL,
+            kind   TEXT NOT NULL,
+            detail TEXT
+        );
+        CREATE INDEX ix_events_at ON events(at);
+        """,
     ];
 
     public static int LatestVersion => Scripts.Length;

@@ -14,7 +14,15 @@ public interface IQuizStore
     /// <summary>Saves the updated card and appends the review log, atomically.</summary>
     void SaveReview(CardState card, ReviewLog log);
 
+    /// <summary>Review history from <paramref name="since"/> onwards, oldest first.</summary>
+    IReadOnlyList<ReviewLog> GetReviewsSince(DateTimeOffset since);
+
     StudySettings GetStudySettings();
 
     void FlagQuestion(string questionId, string? note, DateTimeOffset now);
+
+    /// <summary>Appends a usage event (see <see cref="StudyEvent"/>).</summary>
+    void LogEvent(string kind, string? detail, DateTimeOffset at);
+
+    IReadOnlyList<StudyEventLog> GetEventsSince(DateTimeOffset since);
 }

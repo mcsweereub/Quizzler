@@ -46,6 +46,9 @@ tools/                   install.ps1 / uninstall.ps1 (per-user install), make-ic
 - Pack URIs must be assembly-qualified (`pack://application:,,,/Quizzler.App;component/...`).
 - Settings window (`SettingsWindow` + `SettingsViewModel`): theme (live preview, Cancel reverts), study and
   notification settings, start with Windows. Theme is stored in the `settings` table under key `theme`.
+- Stats window (`StatsWindow` + `StatsViewModel`, charts in `Views/StatsCharts.cs`): tray menu "Stats…" and the
+  end-of-session screen. All numbers come from Core's `StatsCalculator` (pure, unit-tested); `quizzler stats` prints
+  the same report. Heatmap colours are `HeatLevel0..4Brush` (single hue; brighter = more in dark mode).
 - Log: `%LOCALAPPDATA%\Quizzler\quizzler.log`.
 
 ### Testing the app yourself
@@ -90,6 +93,15 @@ All database commands take `--db <path>`; default is `$QUIZZLER_DB`, then `%LOCA
   a new id instead and delete the old one, so stale progress doesn't carry over.
 - Journal mode is the SQLite default (not WAL) so the single .db file is always complete and safe to copy.
 - Timestamps are stored as UTC Unix milliseconds. Schema changes = append a script in Migrations.cs.
+- Review history is the long-term dataset (stats now, maybe an FSRS scheduler later), and can't be backfilled, so
+  keep recording it fully. Each review stores the grader's verdict (`grade`: an Incorrect grade with a non-Again rating
+  = the user overrode it), `interval_before`/`due_before`/`interval_after`, `client` (app/cli) and `question_hash`
+  (the question's content hash then, so leeches ignore answers to an older wording). Rows from before schema v2 have
+  NULLs there. Usage events (`events` table, kinds in Core's `StudyEvent`): reminders shown/clicked, snoozes,
+  sessions started/ended, app starts. Log new behaviours there rather than in the text log if stats might use them.
+- When asked to improve weak questions: `quizzler stats` lists "questions you keep missing" with ids and the last
+  wrong answer. Reword or split them (new id if the meaning changes), or add `accepted` forms if the grader was
+  overridden.
 
 ## Fixing flagged questions
 

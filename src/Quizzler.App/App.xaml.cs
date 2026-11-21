@@ -31,6 +31,7 @@ public partial class App : Application, ITrayHost, ISettingsHost
     private DispatcherTimer? _timer;
     private QuizWindow? _window;
     private SettingsWindow? _settingsWindow;
+    private StatsWindow? _statsWindow;
     private DateTimeOffset? _lastNotifiedAt;
     private DateTimeOffset? _snoozedUntil;
 
@@ -69,7 +70,9 @@ public partial class App : Application, ITrayHost, ISettingsHost
 
         Log.Info($"Starting (db={dbPath}, background={background}, launchAction={launchAction?.ToString() ?? "none"}).");
         _db = QuizDatabase.Open(dbPath);
-        _service = new QuizService(_db);
+        _service = new QuizService(_db) { Client = "app" };
+        _service.LogEvent(StudyEvent.AppStarted, background ? "background" : "foreground");
+        if (launchAction is { } clicked) _service.LogEvent(StudyEvent.ReminderClicked, ActionName(clicked) + " (app was closed)");
         ThemeService.Apply(ThemeService.Parse(_db.GetSetting(SettingsViewModel.ThemeSettingKey)));
 
         var contentMessage = BundledContent.Sync(_db);
@@ -115,6 +118,7 @@ public partial class App : Application, ITrayHost, ISettingsHost
             {
                 _notifier.ShowDueReminder("Time for a quick quiz", NotificationPolicy.Message(summary));
                 _lastNotifiedAt = now;
+                _service.LogEvent(StudyEvent.ReminderShown, $"{summary.DueReviews} reviews, {summary.NewAvailable} new");
             }
         }
         catch (Exception ex)
@@ -126,6 +130,7 @@ public partial class App : Application, ITrayHost, ISettingsHost
     private void OnNotificationAction(NotificationAction action)
     {
         Log.Info($"Notification action: {action}.");
+        _service.LogEvent(StudyEvent.ReminderClicked, ActionName(action));
         switch (action)
         {
             case NotificationAction.SnoozeHour:
@@ -158,7 +163,7 @@ public partial class App : Application, ITrayHost, ISettingsHost
         }
 
         _notifier?.ClearDueReminder();
-        _window = new QuizWindow(new QuizViewModel(_service, OpenSettings), _activateWindows);
+        _window = new QuizWindow(new QuizViewModel(_service, OpenSettings, OpenStats), _activateWindows);
         _window.Closed += OnQuizWindowClosed;
         _window.Show();
         if (_activateWindows) _window.Activate();
@@ -180,6 +185,7 @@ public partial class App : Application, ITrayHost, ISettingsHost
         _snoozedUntil = duration is { } d ? now + d : NotificationPolicy.NextMorning(_db.GetNotificationSettings(), now);
         _notifier?.ClearDueReminder();
         Log.Info($"Snoozed until {_snoozedUntil:g}.");
+        _service.LogEvent(StudyEvent.Snoozed, duration is { } h ? $"{h.TotalHours:0.#}h" : "tomorrow");
         Refresh();
     }
 
@@ -202,8 +208,23 @@ public partial class App : Application, ITrayHost, ISettingsHost
         if (_activateWindows) _settingsWindow.Activate();
     }
 
+    public void OpenStats()
+    {
+        if (_statsWindow is { IsVisible: true })
+        {
+            if (_statsWindow.WindowState == WindowState.Minimized) _statsWindow.WindowState = WindowState.Normal;
+            if (_activateWindows) _statsWindow.Activate();
+            return;
+        }
+        _statsWindow = new StatsWindow(new StatsViewModel(_service, _db.GetQuestionHashes)) { ShowActivated = _activateWindows };
+        _statsWindow.Closed += (_, _) => _statsWindow = null;
+        _statsWindow.Show();
+        if (_activateWindows) _statsWindow.Activate();
+    }
+
     public void ExitApp()
     {
+        _statsWindow?.Close();
         _settingsWindow?.Close();
         _window?.Close();
         Shutdown();
@@ -268,6 +289,13 @@ public partial class App : Application, ITrayHost, ISettingsHost
             "Quizzler", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
+
+    private static string ActionName(NotificationAction action) => action switch
+    {
+        NotificationAction.StartQuiz => "start",
+        NotificationAction.SnoozeHour => "snooze",
+        _ => "open",
+    };
 
     private static string? ArgValue(string[] args, string name)
     {

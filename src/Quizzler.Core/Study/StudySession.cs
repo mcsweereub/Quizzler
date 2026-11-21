@@ -29,11 +29,25 @@ public sealed class StudySession
     private readonly Stopwatch _stopwatch = new();
     private int _index = -1;
 
+    private bool _ended;
+
     public StudySession(QuizService service, SessionPlan plan, Random? random = null)
     {
         _service = service;
         _items = plan.Items;
         _random = random ?? new Random();
+        if (_items.Count > 0)
+            _service.LogEvent(StudyEvent.SessionStarted, $"{plan.DueReviews} reviews, {plan.NewCards} new");
+        else
+            _ended = true;
+    }
+
+    /// <summary>Logs the end of the session (once). Called automatically when the last question is done; call it if the user quits early.</summary>
+    public void End()
+    {
+        if (_ended) return;
+        _ended = true;
+        _service.LogEvent(StudyEvent.SessionEnded, $"{Answered}/{Total} answered, {CorrectCount} correct");
     }
 
     public int Total => _items.Count;
@@ -56,7 +70,11 @@ public sealed class StudySession
 
         _index++;
         Choices = null;
-        if (Current is not { } item) return false;
+        if (Current is not { } item)
+        {
+            End();
+            return false;
+        }
 
         if (item.Stage == CardStage.MultipleChoice)
             Choices = MultipleChoice.Build(item.Question, _random);
@@ -99,7 +117,13 @@ public sealed class StudySession
         if (pending is { State: AnswerState.Incorrect, CanOverride: false } && outcome != AnswerOutcome.Wrong)
             throw new InvalidOperationException("A wrong multiple-choice answer can't be marked right.");
 
-        var card = _service.RecordAnswer(item, outcome, pending.Response, _stopwatch.Elapsed);
+        var grade = pending.State switch
+        {
+            AnswerState.Correct => ReviewGrade.Correct,
+            AnswerState.Incorrect => ReviewGrade.Incorrect,
+            _ => ReviewGrade.SelfGraded,
+        };
+        var card = _service.RecordAnswer(item, outcome, pending.Response, _stopwatch.Elapsed, grade);
         Answered++;
         if (outcome != AnswerOutcome.Wrong) CorrectCount++;
         Pending = null;

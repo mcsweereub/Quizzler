@@ -43,7 +43,10 @@ To remove it: `tools/uninstall.ps1` (add `-RemoveData` to delete your progress t
 ## Using the app
 
 - **Tray icon**: the red badge shows how many questions are due. Left-click to start a quiz; right-click
-  for Snooze (1 hour / until tomorrow), Settings and Exit.
+  for Snooze (1 hour / until tomorrow), Stats, Settings and Exit.
+- **Stats**: streak, a calendar of days studied, reviews coming up over the next two weeks, how well you
+  remember after each gap (1 day, a week, a month...), progress and accuracy per topic, and the questions you
+  keep missing.
 - **Reminders**: a notification with **Start quiz** and **Snooze 1 hour** buttons, at most once per
   reminder interval and never during quiet hours (default 22:00–08:00).
 - **Settings**: theme (Match Windows / Light / Dark), new questions per day, when a new day starts,
@@ -68,7 +71,7 @@ The installer also puts a `quizzler` CLI in `%LOCALAPPDATA%\Programs\Quizzler\cl
 
 ```powershell
 dotnet run --project src/Quizzler.Cli -- quiz       # study in the terminal
-dotnet run --project src/Quizzler.Cli -- stats      # due counts, today's accuracy, per-topic progress
+dotnet run --project src/Quizzler.Cli -- stats      # streak, accuracy, forecast, topics, questions you keep missing
 dotnet run --project src/Quizzler.Cli -- validate   # check the question bank and run every snippet
 dotnet run --project src/Quizzler.Cli -- import     # import content/ into your database
 dotnet run --project src/Quizzler.Cli -- flags      # questions you flagged

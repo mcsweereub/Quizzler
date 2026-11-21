@@ -15,6 +15,66 @@ public class StudySessionTests
         public void SaveReview(CardState card, ReviewLog log) { Cards[card.QuestionId] = card; Logs.Add(log); }
         public StudySettings GetStudySettings() => new();
         public void FlagQuestion(string questionId, string? note, DateTimeOffset now) { }
+        public IReadOnlyList<ReviewLog> GetReviewsSince(DateTimeOffset since) => Logs.Where(l => l.ReviewedAt >= since).ToList();
+        public List<(string Kind, string? Detail)> Events { get; } = [];
+        public void LogEvent(string kind, string? detail, DateTimeOffset at) => Events.Add((kind, detail));
+        public IReadOnlyList<StudyEventLog> GetEventsSince(DateTimeOffset since) => [];
+    }
+
+    [Fact]
+    public void Records_the_grader_verdict_and_overrides()
+    {
+        var (session, store) = Start(Concept("a-0001"), Concept("a-0002"));
+
+        session.MoveNext();
+        session.SubmitChoice(session.Choices!.CorrectIndex);
+        session.Complete(AnswerOutcome.Right);
+
+        // Second question: answer it right, then make it typed and get it "wrong" but override.
+        session.MoveNext();
+        session.SubmitChoice(session.Choices!.CorrectIndex);
+        session.Complete(AnswerOutcome.Guessed);
+
+        Assert.Equal(ReviewGrade.Correct, store.Logs[0].Grade);
+        Assert.False(store.Logs[0].WasOverridden);
+        Assert.Equal(0, store.Logs[0].IntervalBeforeDays);
+        Assert.Null(store.Logs[0].DueBefore);
+        Assert.True(store.Logs[0].IntervalAfterDays > 0);
+    }
+
+    [Fact]
+    public void Typed_override_is_recorded_as_overridden()
+    {
+        var store = new InMemoryStore(Concept("a-0001"));
+        store.Cards["a-0001"] = new CardState { QuestionId = "a-0001", Stage = CardStage.Typed, IntervalDays = 6, DueAt = DateTimeOffset.Now.AddHours(-1), Repetitions = 2 };
+        var service = new QuizService(store) { Client = "test" };
+        var session = new StudySession(service, service.PlanSession(), new Random(1));
+
+        session.MoveNext();
+        session.SubmitTyped("selaed");
+        session.Complete(AnswerOutcome.Right);
+
+        var log = Assert.Single(store.Logs);
+        Assert.Equal(ReviewGrade.Incorrect, log.Grade);
+        Assert.True(log.WasOverridden);
+        Assert.Equal(6, log.IntervalBeforeDays);
+        Assert.NotNull(log.DueBefore);
+        Assert.Equal("test", log.Client);
+    }
+
+    [Fact]
+    public void Logs_session_start_and_end_once()
+    {
+        var (session, store) = Start(Concept("a-0001"));
+        session.MoveNext();
+        session.SubmitChoice(session.Choices!.CorrectIndex);
+        session.Complete(AnswerOutcome.Right);
+        Assert.False(session.MoveNext());
+        session.End();
+
+        Assert.Equal(
+            [(StudyEvent.SessionStarted, "0 reviews, 1 new"), (StudyEvent.SessionEnded, "1/1 answered, 1 correct")],
+            store.Events);
     }
 
     private static Question Concept(string id) => new()

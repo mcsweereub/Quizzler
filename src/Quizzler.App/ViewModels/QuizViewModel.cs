@@ -106,9 +106,10 @@ public sealed class QuizViewModel : ObservableObject
     private string _summaryText = "";
     private string _nextReviewText = "";
 
-    public QuizViewModel(QuizService service, Action? openSettings = null)
+    public QuizViewModel(QuizService service, Action? openSettings = null, Action? openStats = null)
     {
         OpenSettingsCommand = new RelayCommand(() => openSettings?.Invoke());
+        OpenStatsCommand = new RelayCommand(() => openStats?.Invoke());
         _service = service;
         var plan = service.PlanSession();
         _session = new StudySession(service, plan);
@@ -153,6 +154,7 @@ public sealed class QuizViewModel : ObservableObject
     public RelayCommand CancelFlagCommand { get; }
     public RelayCommand CloseCommand { get; }
     public RelayCommand OpenSettingsCommand { get; }
+    public RelayCommand OpenStatsCommand { get; }
 
     public QuizMode Mode
     {
@@ -292,6 +294,7 @@ public sealed class QuizViewModel : ObservableObject
     public void CompletePendingOnClose()
     {
         if (Mode == QuizMode.Feedback && Feedback is { NeedsSelfGrade: false }) Next();
+        _session.End();
     }
 
     // ------------------------------------------------------------------ flow

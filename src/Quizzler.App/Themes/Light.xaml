@@ -14,6 +14,12 @@
     <SolidColorBrush x:Key="AccentBrush" Color="#4F46E5" />
     <SolidColorBrush x:Key="AccentFillBrush" Color="#4F46E5" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#EEF2FF" />
+    <!-- Stats heatmap: one hue, light (little) to dark (lots). Level 0 = no study that day. -->
+    <SolidColorBrush x:Key="HeatLevel0Brush" Color="#EEF0F3" />
+    <SolidColorBrush x:Key="HeatLevel1Brush" Color="#C7D2FE" />
+    <SolidColorBrush x:Key="HeatLevel2Brush" Color="#A5B4FC" />
+    <SolidColorBrush x:Key="HeatLevel3Brush" Color="#6366F1" />
+    <SolidColorBrush x:Key="HeatLevel4Brush" Color="#4338CA" />
 
     <SolidColorBrush x:Key="CorrectBrush" Color="#15803D" />
     <SolidColorBrush x:Key="CorrectSoftBrush" Color="#F0FDF4" />

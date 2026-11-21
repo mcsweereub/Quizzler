@@ -29,7 +29,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var db = QuizDatabase.Open(settings.ResolveDb());
-        var service = new QuizService(db);
+        var service = new QuizService(db) { Client = "cli" };
         var plan = service.PlanSession();
 
         if (db.GetActiveQuestions().Count == 0)
@@ -52,6 +52,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
 
         int answered = 0, correct = 0;
         var random = new Random();
+        service.LogEvent(StudyEvent.SessionStarted, $"{plan.DueReviews} reviews, {plan.NewCards} new");
 
         for (var i = 0; i < items.Count; i++)
         {
@@ -61,6 +62,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
             answered++;
             if (wasCorrect) correct++;
         }
+        service.LogEvent(StudyEvent.SessionEnded, $"{answered}/{items.Count} answered, {correct} correct");
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[bold]Session done[/]").LeftJustified());
@@ -101,6 +103,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
 
         var stopwatch = Stopwatch.StartNew();
         bool isCorrect;
+        ReviewGrade grade;
         string? response;
         bool canOverride = false;
 
@@ -126,6 +129,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
 
             response = mc.Options[choice - 1];
             isCorrect = mc.IsCorrect(choice - 1);
+            grade = isCorrect ? ReviewGrade.Correct : ReviewGrade.Incorrect;
             AnsiConsole.MarkupLine(isCorrect ? "[green]✔ Correct[/]" : $"[red]✘ Incorrect.[/] The answer was [bold]{mc.CorrectIndex + 1}[/].");
         }
         else
@@ -144,6 +148,12 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
             if (response is null || IsQuit(response)) return (Next.Quit, false);
 
             var result = AnswerChecker.Check(q, response);
+            grade = result switch
+            {
+                CheckResult.Correct => ReviewGrade.Correct,
+                CheckResult.Incorrect => ReviewGrade.Incorrect,
+                _ => ReviewGrade.SelfGraded,
+            };
             if (result == CheckResult.NeedsSelfGrade)
             {
                 AnsiConsole.MarkupLine("[bold]Answer:[/]");
@@ -211,7 +221,7 @@ public sealed partial class QuizCommand : Command<QuizCommand.Settings>
             if (IsQuit(key)) break; // still record this answer, then stop
         }
 
-        var updated = service.RecordAnswer(item, outcome, response, stopwatch.Elapsed);
+        var updated = service.RecordAnswer(item, outcome, response, stopwatch.Elapsed, grade);
         var nextIn = TimeText.Until(updated.DueAt - service.Now);
         var nextMode = updated.Stage == CardStage.Typed ? "typed" : "multiple choice";
         AnsiConsole.MarkupLine($"[grey]Next time: {nextMode}, {nextIn}.[/]");

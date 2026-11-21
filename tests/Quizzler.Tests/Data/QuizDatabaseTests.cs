@@ -40,6 +40,40 @@ public sealed class QuizDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void Review_history_round_trips_new_fields_and_stamps_the_question_version()
+    {
+        _db.ImportQuestions(Loaded(Q("t-0001")), Now);
+        var card = new CardState { QuestionId = "t-0001", IntervalDays = 6, DueAt = Now.AddDays(6), FirstReviewedAt = Now, LastReviewedAt = Now };
+        _db.SaveReview(card, new ReviewLog("t-0001", Now, CardStage.Typed, Rating.Good, "selaed", TimeSpan.FromSeconds(3))
+        {
+            Grade = ReviewGrade.Incorrect,
+            IntervalBeforeDays = 1,
+            DueBefore = Now.AddHours(-2),
+            IntervalAfterDays = 6,
+            Client = "app",
+        });
+
+        var log = Assert.Single(_db.GetReviewsSince(Now.AddDays(-1)));
+        Assert.Equal(ReviewGrade.Incorrect, log.Grade);
+        Assert.True(log.WasOverridden);
+        Assert.Equal(1, log.IntervalBeforeDays);
+        Assert.Equal(Now.AddHours(-2).ToUnixTimeMilliseconds(), log.DueBefore!.Value.ToUnixTimeMilliseconds());
+        Assert.Equal(6, log.IntervalAfterDays);
+        Assert.Equal("app", log.Client);
+        Assert.Equal(_db.GetQuestionHashes()["t-0001"], log.QuestionHash);
+    }
+
+    [Fact]
+    public void Events_round_trip()
+    {
+        _db.LogEvent(StudyEvent.ReminderShown, "3 due", Now);
+        _db.LogEvent(StudyEvent.ReminderClicked, "start", Now.AddMinutes(1));
+        var events = _db.GetEventsSince(Now.AddDays(-1));
+        Assert.Equal([StudyEvent.ReminderShown, StudyEvent.ReminderClicked], events.Select(e => e.Kind));
+        Assert.Equal("start", events[1].Detail);
+    }
+
+    [Fact]
     public void Import_round_trips_sql_question_fields()
     {
         var q = Q("t-0001") with

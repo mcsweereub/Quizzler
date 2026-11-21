@@ -1,0 +1,170 @@
+<Window x:Class="Quizzler.App.Views.StatsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:Quizzler.App.Views"
+        xmlns:vm="clr-namespace:Quizzler.App.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:StatsViewModel}"
+        Title="Quizzler stats"
+        Icon="pack://application:,,,/Quizzler.App;component/Assets/quizzler.ico"
+        Width="820" Height="860" MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <Window.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,12" />
+        </Style>
+        <Style x:Key="Muted" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <!-- A horizontal bar on a fixed-width track; Width comes from the view model. -->
+        <Style x:Key="BarTrack" TargetType="Border">
+            <Setter Property="Width" Value="220" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Background" Value="{DynamicResource HeatLevel0Brush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,6,28,28">
+
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Refresh" Style="{StaticResource SecondaryButton}" Margin="0,18,0,0"
+                        VerticalAlignment="Bottom" Command="{Binding RefreshCommand}" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Overview" />
+            </DockPanel>
+
+            <!-- Headline numbers: stat tiles, not charts -->
+            <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:StatTile}">
+                        <Border Style="{StaticResource Card}" Margin="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" />
+                                <TextBlock Text="{Binding Value}" FontSize="26" FontWeight="SemiBold" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Style="{StaticResource Muted}" Margin="0,12,0,0"
+                       Text="No answers yet. Stats fill in as you study: come back after a few sessions."
+                       Visibility="{Binding NoAnswers, Converter={StaticResource BoolToVis}}" />
+
+            <!-- Activity -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Activity" />
+            <views:ActivityHeatmap Days="{Binding Days}" HorizontalAlignment="Left" />
+
+            <!-- Forecast -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Coming up" />
+            <views:ForecastChart Forecast="{Binding Forecast}" HorizontalAlignment="Left" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="{Binding ForecastNote}" />
+
+            <!-- Forgetting curve -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Memory" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,10"
+                       Text="How often you got a question right, by how long it had been since you last saw it. If the longer gaps stay high, the spacing is working." />
+            <TextBlock Style="{StaticResource Muted}" FontStyle="Italic"
+                       Text="Fills in once questions start coming back for review."
+                       Visibility="{Binding NoRetention, Converter={StaticResource BoolToVis}}" />
+            <ItemsControl ItemsSource="{Binding Retention}" Focusable="False"
+                          Visibility="{Binding HasRetention, Converter={StaticResource BoolToVis}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:RetentionRow}">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                            <Border Grid.Column="1" Style="{StaticResource BarTrack}">
+                                <Border Width="{Binding BarWidth}" HorizontalAlignment="Left" CornerRadius="4" Background="{DynamicResource AccentFillBrush}" />
+                            </Border>
+                            <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <Run Text="{Binding RateText, Mode=OneWay}" FontWeight="SemiBold" />
+                                <Run Text="{Binding CountText, Mode=OneWay}" Foreground="{DynamicResource MutedTextBrush}" />
+                            </TextBlock>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Topics -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Topics" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,10"
+                       Text="Bar: questions seen, with the well-learned part (21+ day interval) in the stronger shade. Accuracy is over the last 30 days." />
+            <ItemsControl ItemsSource="{Binding Topics}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TopicRow}">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Topic}" VerticalAlignment="Center" />
+                            <Border Grid.Column="1" Style="{StaticResource BarTrack}">
+                                <Grid>
+                                    <Border Width="{Binding SeenWidth}" HorizontalAlignment="Left" CornerRadius="4" Background="{DynamicResource HeatLevel2Brush}" />
+                                    <Border Width="{Binding MatureWidth}" HorizontalAlignment="Left" CornerRadius="4" Background="{DynamicResource HeatLevel4Brush}" />
+                                </Grid>
+                            </Border>
+                            <TextBlock Grid.Column="2" Margin="12,0,0,0" Text="{Binding SeenText}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Text="{Binding AccuracyText}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Leeches -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Questions you keep missing" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,10"
+                       Text="Wrong 3+ times and at least 40% of the time. Often a sign the question needs rewording or splitting: flag it, or ask Claude to look at these ids." />
+            <TextBlock Style="{StaticResource Muted}" FontStyle="Italic" Text="None so far."
+                       Visibility="{Binding NoLeeches, Converter={StaticResource BoolToVis}}" />
+            <ItemsControl ItemsSource="{Binding Leeches}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:LeechRow}">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock TextWrapping="Wrap" views:InlineText.Markdown="{Binding Prompt}" />
+                                <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0">
+                                    <Run Text="{Binding Id, Mode=OneWay}" FontFamily="{StaticResource CodeFont}" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding Detail, Mode=OneWay}" />
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource Muted}" Text="{Binding LastWrong}" Margin="0,2,0,0"
+                                           Visibility="{Binding HasLastWrong, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Habits -->
+            <TextBlock Style="{StaticResource SectionHeader}" Text="Habits" />
+            <TextBlock Style="{StaticResource Muted}" Text="{Binding HabitsText}" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

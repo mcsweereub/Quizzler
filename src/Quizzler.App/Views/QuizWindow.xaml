@@ -264,6 +264,7 @@
                                TextWrapping="Wrap" TextAlignment="Center" Margin="0,8,0,0" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,26,0,0">
                         <Button Content="Close" Style="{StaticResource PrimaryButton}" Command="{Binding CloseCommand}" />
+                        <Button Content="Stats" Style="{StaticResource SecondaryButton}" Command="{Binding OpenStatsCommand}" />
                         <Button Content="Settings" Style="{StaticResource SecondaryButton}" Margin="0" Command="{Binding OpenSettingsCommand}" />
                     </StackPanel>
                 </StackPanel>

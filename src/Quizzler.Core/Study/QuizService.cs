@@ -32,6 +32,23 @@ public sealed class QuizService(IQuizStore store, ReviewEngine engine, TimeProvi
 
     public DateTimeOffset Now => clock.GetLocalNow();
 
+    /// <summary>Recorded with every answer and event: "app" or "cli".</summary>
+    public string Client { get; init; } = "unknown";
+
+    public IQuizStore Store => store;
+
+    public void LogEvent(string kind, string? detail = null)
+    {
+        try
+        {
+            store.LogEvent(kind, detail, Now);
+        }
+        catch (Exception)
+        {
+            // Usage events are nice-to-have; never let one break studying.
+        }
+    }
+
     public SessionPlan PlanSession() =>
         SessionPlanner.Plan(store.GetActiveQuestions(), store.GetCards(), store.GetStudySettings(), Now);
 
@@ -59,14 +76,36 @@ public sealed class QuizService(IQuizStore store, ReviewEngine engine, TimeProvi
     };
 
     /// <summary>Applies the answer to the card, persists it, and returns the updated card.</summary>
-    public CardState RecordAnswer(SessionItem item, AnswerOutcome outcome, string? response, TimeSpan elapsed)
+    public CardState RecordAnswer(SessionItem item, AnswerOutcome outcome, string? response, TimeSpan elapsed, ReviewGrade? grade = null)
     {
         var now = Now;
         var rating = ToRating(outcome);
         var updated = engine.Apply(item.Card, rating, now);
-        store.SaveReview(updated, new ReviewLog(item.Question.Id, now, item.Stage, rating, response, elapsed));
+        store.SaveReview(updated, new ReviewLog(item.Question.Id, now, item.Stage, rating, response, elapsed)
+        {
+            Grade = grade,
+            IntervalBeforeDays = item.IsNew ? 0 : item.Card.IntervalDays,
+            DueBefore = item.IsNew ? null : item.Card.DueAt,
+            IntervalAfterDays = updated.IntervalDays,
+            Client = Client,
+        });
         return updated;
     }
 
     public void Flag(string questionId, string? note) => store.FlagQuestion(questionId, note, Now);
+
+    /// <param name="currentHashes">Each question's current content hash, so leeches ignore answers to an older wording.</param>
+    public StatsReport GetStats(IReadOnlyDictionary<string, string>? currentHashes = null)
+    {
+        var now = Now;
+        return StatsCalculator.Compute(
+            store.GetActiveQuestions(),
+            store.GetCards(),
+            store.GetReviewsSince(DateTimeOffset.UnixEpoch),
+            store.GetEventsSince(now.AddDays(-StatsCalculator.RecentDays)),
+            store.GetStudySettings(),
+            now,
+            clock.LocalTimeZone,
+            currentHashes);
+    }
 }

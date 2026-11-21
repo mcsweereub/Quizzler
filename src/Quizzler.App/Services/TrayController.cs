@@ -13,6 +13,7 @@ internal interface ITrayHost
     void Snooze(TimeSpan? duration); // null = until tomorrow morning
     void ClearSnooze();
     void OpenSettings();
+    void OpenStats();
     void ExitApp();
 }
 
@@ -39,6 +40,7 @@ internal sealed class TrayController : IDisposable
         menu.Items.Add(_snoozeTomorrowItem);
         menu.Items.Add(_resumeItem);
         menu.Items.Add(new Separator());
+        menu.Items.Add(Item("Stats…", (_, _) => host.OpenStats()));
         menu.Items.Add(Item("Settings…", (_, _) => host.OpenSettings()));
         menu.Items.Add(Item("Exit", (_, _) => host.ExitApp()));
 
