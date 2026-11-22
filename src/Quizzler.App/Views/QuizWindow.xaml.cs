@@ -52,6 +52,8 @@ public partial class QuizWindow : Window
     {
         if (ViewModel.IsFlagging)
             FlagBox.Focus();
+        else if (ViewModel.IsCodingNow)
+            ExerciseEditor.TextArea.Focus();
         else if (ViewModel.Mode == QuizMode.Question && ViewModel.Question is { IsTyped: true })
             AnswerBox.Focus();
         else
@@ -66,8 +68,8 @@ public partial class QuizWindow : Window
         var vm = ViewModel;
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
 
-        // Typing into the answer box is never blocked; only window shortcuts are guarded.
-        var typingAnswer = vm.Mode == QuizMode.Question && vm.Question is { IsTyped: true } && e.Key != Key.Enter;
+        // Typing into the answer box or code editor is never blocked; only window shortcuts are guarded.
+        var typingAnswer = (vm.Mode == QuizMode.Question && vm.Question is { IsTyped: true } && e.Key != Key.Enter) || vm.IsCodingNow;
         if (!typingAnswer && !vm.IsFlagging && DateTime.UtcNow - _modeChangedAt < ShortcutGuard && e.Key != Key.Escape)
         {
             e.Handled = true;
@@ -76,6 +78,14 @@ public partial class QuizWindow : Window
 
         e.Handled = vm.Mode switch
         {
+            // The editor gets every key (Esc too, so a stray press can't throw away code); Ctrl+Enter runs.
+            QuizMode.Question when vm.IsCodingNow => e.Key == Key.Enter && ctrl && Do(() => _ = vm.RunExerciseAsync()),
+            QuizMode.Picker => e.Key switch
+            {
+                Key.Enter => Do(vm.StartPickedSession),
+                Key.Escape => Do(Close),
+                _ => false,
+            },
             QuizMode.Question when vm.Question is { IsMultipleChoice: true } => HandleChoiceKey(e.Key),
             QuizMode.Question when e.Key == Key.Enter && (ctrl || vm.Question is { IsMultiLineAnswer: false }) => Do(vm.Submit),
             QuizMode.Question when e.Key == Key.Escape => Do(Close),
@@ -95,6 +105,7 @@ public partial class QuizWindow : Window
                 Key.Y => Do(() => vm.CompleteIf(AnswerState.NeedsSelfGrade, AnswerOutcome.Right)),
                 Key.N => Do(() => vm.CompleteIf(AnswerState.NeedsSelfGrade, AnswerOutcome.Wrong)),
                 Key.F => Do(vm.StartFlag),
+                Key.X => Do(() => _ = vm.ExplainAsync()),
                 Key.Escape => Do(Close),
                 _ => false,
             },

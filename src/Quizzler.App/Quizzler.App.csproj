@@ -29,6 +29,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Quizzler.Core\Quizzler.Core.csproj" />
     <ProjectReference Include="..\Quizzler.Data\Quizzler.Data.csproj" />
+    <ProjectReference Include="..\Quizzler.CodeRunner\Quizzler.CodeRunner.csproj" />
+    <ProjectReference Include="..\Quizzler.Ai\Quizzler.Ai.csproj" />
+    <!-- Copies Quizzler.Sandbox.exe next to the app: coding exercises run in it (see SandboxProcess). -->
+    <ProjectReference Include="..\Quizzler.Sandbox\Quizzler.Sandbox.csproj" />
   </ItemGroup>
 
   <ItemGroup>

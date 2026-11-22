@@ -90,6 +90,41 @@ public sealed partial record PlanStep(int Depth, string Detail)
 public sealed class SqlRunException(string message, Exception? inner = null) : Exception(message, inner);
 
 /// <summary>
+/// The outcome of a SQL write-code exercise: the user's result against the reference query's result on the same tables.
+/// Rows must match exactly (values, column count, and row order when the reference query has ORDER BY); column names don't matter.
+/// </summary>
+public sealed record SqlExerciseResult(IReadOnlyList<SqlTable> Tables, SqlTable Expected, SqlTable? Actual, string? Error, bool Ordered)
+{
+    public bool Passed => Mismatch is null;
+
+    /// <summary>Why the user's query doesn't pass, or null when it does.</summary>
+    public string? Mismatch
+    {
+        get
+        {
+            if (Error is not null) return Error;
+            if (Actual is null) return "No result.";
+            if (Actual.Columns.Count != Expected.Columns.Count)
+                return $"Your query returns {Plural(Actual.Columns.Count, "column")}; the expected result has {Expected.Columns.Count}.";
+            if (Actual.Rows.Count != Expected.Rows.Count)
+                return $"Your query returns {Plural(Actual.Rows.Count, "row")}; the expected result has {Expected.Rows.Count}.";
+
+            var actualRows = Actual.Rows.Select(Key).ToList();
+            var expectedRows = Expected.Rows.Select(Key).ToList();
+            if (actualRows.SequenceEqual(expectedRows)) return null;
+            if (actualRows.Order(StringComparer.Ordinal).SequenceEqual(expectedRows.Order(StringComparer.Ordinal)))
+                return Ordered ? "Right rows, wrong order: check the ORDER BY the exercise asks for." : null;
+            return "Some values differ from the expected result.";
+        }
+    }
+
+    // Exact values: the user's query has to produce the data, so 'ada' vs 'Ada' is a real difference.
+    private static string Key(IReadOnlyList<string> row) => string.Join('\u001F', row);
+
+    private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
+}
+
+/// <summary>
 /// Runs a question's setup + query in a throwaway in-memory SQLite database. Nothing touches disk.
 /// </summary>
 public static class SqlSandbox
@@ -147,6 +182,62 @@ public static class SqlSandbox
         }
 
         return new SqlRun(tables, result, matters, plan);
+    }
+
+    /// <summary>
+    /// Runs a SQL exercise: <paramref name="userQuery"/> and <paramref name="referenceQuery"/> against fresh copies of
+    /// <paramref name="setup"/>. The user's query is stopped after <paramref name="timeout"/> (default 5 s), so a runaway
+    /// recursive CTE can't hang the app. Throws <see cref="SqlRunException"/> only if the setup or reference query fails.
+    /// </summary>
+    public static SqlExerciseResult RunExercise(string setup, string userQuery, string referenceQuery, TimeSpan? timeout = null)
+    {
+        var reference = Run(setup, referenceQuery);
+        var ordered = HasTopLevelOrderBy(referenceQuery);
+
+        if (string.IsNullOrWhiteSpace(userQuery))
+            return new SqlExerciseResult(reference.Tables, reference.Result, null, "Write a query first.", ordered);
+
+        using var connection = new SqliteConnection("Data Source=:memory:;Pooling=False");
+        connection.Open();
+        Execute(connection, setup, "Setup");
+
+        var limit = timeout ?? TimeSpan.FromSeconds(5);
+        var timedOut = false;
+        using var timer = new Timer(_ =>
+        {
+            timedOut = true;
+            SQLitePCL.raw.sqlite3_interrupt(connection.Handle);
+        }, null, limit, Timeout.InfiniteTimeSpan);
+
+        try
+        {
+            var actual = Query(connection, userQuery, "Your result");
+            return new SqlExerciseResult(reference.Tables, reference.Result, actual, null, ordered);
+        }
+        catch (SqlRunException ex)
+        {
+            var message = timedOut
+                ? $"Your query was stopped after {limit.TotalSeconds:0} seconds (an endless recursive CTE?)."
+                : ex.Message.Replace("Query failed: ", "SQL error: ");
+            return new SqlExerciseResult(reference.Tables, reference.Result, null, message, ordered);
+        }
+    }
+
+    /// <summary>True when the query's outermost SELECT has an ORDER BY (one inside parentheses, e.g. a window, doesn't count).</summary>
+    public static bool HasTopLevelOrderBy(string query)
+    {
+        var depth = 0;
+        var outer = new System.Text.StringBuilder();
+        var inString = false;
+        foreach (var c in query)
+        {
+            if (c == '\'') inString = !inString;
+            if (inString) continue;
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (depth == 0) outer.Append(c);
+        }
+        return System.Text.RegularExpressions.Regex.IsMatch(outer.ToString(), @"\bORDER\s+BY\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
 
     private static List<PlanStep> ReadPlan(SqliteConnection connection, string query)

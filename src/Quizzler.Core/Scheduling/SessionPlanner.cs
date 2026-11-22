@@ -24,18 +24,23 @@ public sealed record SessionPlan(IReadOnlyList<SessionItem> Items, int DueReview
 /// <summary>Decides what to ask right now: every due review, plus new questions up to today's limit.</summary>
 public static class SessionPlanner
 {
+    /// <param name="filter">Limits the session to some kinds of question / one answer style. The new-per-day allowance
+    /// is shared: new questions introduced in any session count against it.</param>
     public static SessionPlan Plan(
         IReadOnlyCollection<Question> questions,
         IReadOnlyCollection<CardState> cards,
         StudySettings settings,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        SessionFilter? filter = null)
     {
+        filter ??= SessionFilter.Everything;
         var questionsById = questions.ToDictionary(q => q.Id);
         var dayStart = StartOfStudyDay(now, settings.DayRolloverHour);
 
         // Cards whose question has since been removed from content are ignored.
         var due = cards
-            .Where(c => c.DueAt <= now && questionsById.ContainsKey(c.QuestionId))
+            .Where(c => c.DueAt <= now && questionsById.TryGetValue(c.QuestionId, out var q)
+                        && filter.Includes(q) && filter.AllowsStage(q, c.Stage, isNew: false))
             .OrderBy(c => c.DueAt)
             .Select(c => new SessionItem(questionsById[c.QuestionId], c, IsNew: false))
             .ToList();
@@ -45,7 +50,7 @@ public static class SessionPlanner
 
         var seen = cards.Select(c => c.QuestionId).ToHashSet();
         var fresh = questions
-            .Where(q => !seen.Contains(q.Id))
+            .Where(q => !seen.Contains(q.Id) && filter.Includes(q) && filter.AllowsStage(q, CardStage.MultipleChoice, isNew: true))
             .OrderBy(q => q.Difficulty)
             .ThenBy(q => q.Id, StringComparer.Ordinal)
             .Take(newAllowance)

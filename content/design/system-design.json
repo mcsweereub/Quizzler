@@ -1,0 +1,199 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "design-system-design-0001",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["cap", "distributed-systems"],
+      "prompt": "By the CAP theorem, what must a distributed data store give up while a network partition is happening?",
+      "answer": "Either consistency or availability: refuse some requests to stay consistent, or answer with possibly stale data to stay available",
+      "recall": "self",
+      "distractors": [
+        "Partition tolerance, so that it can keep both consistency and availability",
+        "Durability: recent writes may be lost",
+        "Nothing, as long as there are at least three replicas"
+      ],
+      "explanation": "Partitions happen whether you like it or not, so the real choice is C or A while one lasts. With no partition, a system can offer both."
+    },
+    {
+      "id": "design-system-design-0002",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 1,
+      "tags": ["scaling"],
+      "prompt": "What is the difference between horizontal and vertical scaling?",
+      "answer": "Horizontal adds more machines; vertical gives one machine more CPU or memory",
+      "recall": "self",
+      "distractors": [
+        "Horizontal gives one machine more CPU or memory; vertical adds more machines",
+        "Horizontal scales the database; vertical scales the web tier",
+        "Horizontal is automatic; vertical is manual"
+      ],
+      "explanation": "Vertical scaling is simple but has a ceiling and a single point of failure. Horizontal scaling needs stateless services (or partitioned state) and a load balancer."
+    },
+    {
+      "id": "design-system-design-0003",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["caching"],
+      "prompt": "Which caching strategy has the application check the cache first and, on a miss, read from the database itself and put the result in the cache?",
+      "answer": "Cache-aside",
+      "accepted": ["Cache aside", "Lazy loading", "Lazy-loading cache"],
+      "distractors": ["Write-through", "Write-behind", "Read-through"],
+      "explanation": "In cache-aside the app owns the loading logic; with read-through the cache library loads from the database for you. Write-through and write-behind are about when writes reach the database."
+    },
+    {
+      "id": "design-system-design-0004",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 2,
+      "tags": ["idempotency", "apis"],
+      "prompt": "What does it mean for an API operation to be idempotent?",
+      "answer": "Doing it several times has the same effect as doing it once, so a client can safely retry it",
+      "recall": "self",
+      "distractors": [
+        "It always returns exactly the same response body",
+        "It has no side effects at all",
+        "The server only allows it to be called once"
+      ],
+      "explanation": "DELETE /orders/7 twice leaves the order deleted either way, even if the second response is a 404. Idempotency is about the effect on the server, not identical responses; \"no side effects\" is the stronger property called safe."
+    },
+    {
+      "id": "design-system-design-0005",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 2,
+      "tags": ["http", "idempotency"],
+      "prompt": "Which HTTP method is not idempotent by definition: GET, PUT, DELETE or POST?",
+      "answer": "POST",
+      "distractors": ["PUT", "DELETE", "GET"],
+      "explanation": "POST creates or triggers something each time, so retrying can create duplicates; APIs often add an Idempotency-Key header to make retries safe. PUT replaces a resource with the same state each time."
+    },
+    {
+      "id": "design-system-design-0006",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["resilience", "circuit-breaker"],
+      "prompt": "Which resilience pattern stops calling a downstream service for a while after repeated failures, failing fast instead, then lets a trial request through to see whether it has recovered?",
+      "answer": "Circuit breaker",
+      "distractors": ["Retry with backoff", "Bulkhead", "Rate limiter"],
+      "explanation": "Closed → open (fail fast) → half-open (one trial call). It protects both your threads and the struggling service; retries alone would add load to it."
+    },
+    {
+      "id": "design-system-design-0007",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["resilience", "retries"],
+      "prompt": "Why add random jitter to exponential backoff between retries?",
+      "answer": "So clients that failed at the same moment don't all retry in sync and swamp the recovering service again (a thundering herd)",
+      "recall": "self",
+      "distractors": [
+        "To make each retry more likely to succeed on its own",
+        "To stop the retries from ever timing out",
+        "Because exact backoff intervals aren't allowed by HTTP"
+      ],
+      "explanation": "Without jitter, a thousand clients that failed together retry together at 1 s, 2 s, 4 s... Randomising the delay spreads the load out."
+    },
+    {
+      "id": "design-system-design-0008",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 2,
+      "tags": ["consistency", "replication"],
+      "prompt": "What does \"eventual consistency\" mean?",
+      "answer": "Once writes stop, all replicas converge on the same value; until then, reads may return stale data",
+      "recall": "self",
+      "distractors": [
+        "Every read returns the latest write, after a short delay",
+        "Data is written to disk eventually rather than immediately",
+        "Transactions are applied in a random order"
+      ],
+      "explanation": "It's the availability-friendly choice: replicas accept reads and writes independently and sync in the background. Code has to tolerate briefly stale reads."
+    },
+    {
+      "id": "design-system-design-0009",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 4,
+      "tags": ["partitioning", "hashing"],
+      "prompt": "Which technique spreads keys across cache or database nodes so that adding or removing a node only moves about 1/n of the keys?",
+      "answer": "Consistent hashing",
+      "accepted": ["Hash ring"],
+      "distractors": ["Modulo hashing", "Range partitioning", "Round robin"],
+      "explanation": "With `hash(key) % n`, changing n remaps almost every key. Consistent hashing places nodes and keys on a ring, so a change only affects keys next to that node."
+    },
+    {
+      "id": "design-system-design-0010",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 2,
+      "tags": ["load-balancing"],
+      "prompt": "Which load-balancing algorithm sends each new request to the server with the fewest active connections?",
+      "answer": "Least connections",
+      "accepted": ["Least-connections", "Least connection", "Least outstanding requests"],
+      "distractors": ["Round robin", "IP hash", "Random"],
+      "explanation": "Least connections adapts when some requests are much slower than others. Round robin assumes every request costs the same; IP hash keeps a client on one server (sticky sessions)."
+    },
+    {
+      "id": "design-system-design-0011",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["messaging", "queues"],
+      "prompt": "What is a message queue's dead-letter queue for?",
+      "answer": "Holding messages that couldn't be processed after several attempts (or expired), so they stop blocking the main queue and can be inspected",
+      "recall": "self",
+      "distractors": [
+        "Storing messages whose consumer has shut down, until it restarts",
+        "Messages that should be deleted without being read",
+        "A backup copy of every message, for replay"
+      ],
+      "explanation": "A \"poison\" message that always throws would otherwise be retried forever. Moving it aside keeps the queue flowing; alert on the DLQ and fix or replay its messages."
+    },
+    {
+      "id": "design-system-design-0012",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["messaging", "idempotency"],
+      "prompt": "With at-least-once message delivery, what property must consumers have so a redelivered message isn't processed twice?",
+      "answer": "Idempotent",
+      "accepted": ["Idempotency", "Idempotent consumers"],
+      "distractors": ["Stateless", "Single-threaded", "Asynchronous"],
+      "explanation": "Brokers redeliver when an acknowledgement is lost, so duplicates will happen. Record processed message ids, or make the operation naturally repeatable (an upsert rather than an increment)."
+    },
+    {
+      "id": "design-system-design-0013",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 2,
+      "tags": ["databases", "replication"],
+      "prompt": "Which database technique copies data from a primary to read-only copies to spread out read traffic?",
+      "answer": "Replication",
+      "accepted": ["Read replicas", "Database replication"],
+      "distractors": ["Sharding", "Partitioning", "Denormalisation"],
+      "explanation": "Replicas scale reads (and give failover), but every write still goes to the primary, and asynchronous replicas can lag. Sharding splits the data itself, which also scales writes."
+    },
+    {
+      "id": "design-system-design-0014",
+      "type": "concept",
+      "topic": "design/system-design",
+      "difficulty": 3,
+      "tags": ["databases", "sharding"],
+      "prompt": "What is sharding?",
+      "answer": "Splitting one dataset across several databases by a key (e.g. customer id), so each holds and serves part of the data",
+      "recall": "self",
+      "distractors": [
+        "Keeping full copies of the database on several servers",
+        "Splitting a table's columns into separate tables",
+        "Encrypting each part of the database with a different key"
+      ],
+      "explanation": "Sharding scales writes and storage. The costs are cross-shard queries and transactions, and hot shards if the key is badly chosen. Full copies are replication; splitting columns is vertical partitioning."
+    }
+  ]
+}

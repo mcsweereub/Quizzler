@@ -386,6 +386,19 @@ public sealed class QuizDatabase : IQuizStore
         SetSetting(connection, null, key, value);
     }
 
+    public void DeleteSetting(string key)
+    {
+        using var connection = Connect();
+        Execute(connection, null, "DELETE FROM settings WHERE key = $key", ("$key", key));
+    }
+
+    /// <summary>Sets <paramref name="key"/>, or deletes it when <paramref name="value"/> is null.</summary>
+    public void SetOrDeleteSetting(string key, string? value)
+    {
+        if (value is null) DeleteSetting(key);
+        else SetSetting(key, value);
+    }
+
     private int? GetIntSetting(string key) =>
         GetSetting(key) is { } s && int.TryParse(s, CultureInfo.InvariantCulture, out var v) ? v : null;
 

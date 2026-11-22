@@ -20,6 +20,12 @@ public static class StudyEvent
 
     /// <summary>Detail: "{answered}/{total} answered, {correct} correct".</summary>
     public const string SessionEnded = "session_ended";
+
+    /// <summary>A coding exercise was run (not yet submitted). Detail: "{question id}: {passed}/{total} passed" or "{id}: compile error".</summary>
+    public const string ExerciseRun = "exercise_run";
+
+    /// <summary>"Explain my mistake" was used. Detail: "{question id}" plus " failed: {reason}" when it didn't work.</summary>
+    public const string ExplanationRequested = "explanation_requested";
 }
 
 /// <summary>A row from the events table.</summary>

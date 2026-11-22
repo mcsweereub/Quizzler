@@ -122,6 +122,67 @@
         <ScrollViewer x:Name="PageScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="28,18,28,24">
 
+                <!-- ============ Choose what to study ============ -->
+                <Border Visibility="{Binding ShowPickerPanel, Converter={StaticResource BoolToVis}}">
+                <StackPanel DataContext="{Binding Picker}">
+                    <TextBlock Text="Choose what to study" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap"
+                               Text="Questions you leave out stay due and wait for a session that includes them." />
+
+                    <WrapPanel Margin="0,16,0,0">
+                        <Button Content="Everything due" Style="{StaticResource SecondaryButton}" Command="{Binding EverythingCommand}" />
+                        <Button Content="Multiple choice only" Style="{StaticResource SecondaryButton}" Command="{Binding MultipleChoiceCommand}" />
+                        <Button Content="Typed only" Style="{StaticResource SecondaryButton}" Command="{Binding TypedCommand}" />
+                        <Button Content="Coding exercises" Style="{StaticResource SecondaryButton}" Command="{Binding CodingCommand}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="ANSWER STYLE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,22,0,6" />
+                    <ItemsControl ItemsSource="{Binding Styles}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:StyleOption}">
+                                <RadioButton GroupName="AnswerStyle" Margin="0,0,0,6" Focusable="False"
+                                             Command="{Binding DataContext.SelectStyleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             CommandParameter="{Binding}">
+                                    <RadioButton.IsChecked>
+                                        <MultiBinding Converter="{x:Static views:EqualityConverter.Instance}" Mode="OneWay">
+                                            <Binding />
+                                            <Binding Path="DataContext.Style" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                        </MultiBinding>
+                                    </RadioButton.IsChecked>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" />
+                                        <TextBlock Text="{Binding Hint}" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" />
+                                    </StackPanel>
+                                </RadioButton>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock FontSize="12" Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,0,0,0"
+                               Text="Coding exercises are neither multiple choice nor typed, so they only come with &quot;As scheduled&quot;." />
+
+                    <TextBlock Text="QUESTION TYPES" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,20,0,6" />
+                    <ItemsControl ItemsSource="{Binding Kinds}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:KindOption}">
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="280" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked}" Focusable="False" />
+                                    <TextBlock Grid.Column="1" Text="{Binding CountText}" VerticalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                        <Button Content="Start (Enter)" Style="{StaticResource PrimaryButton}" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" />
+                        <TextBlock Text="{Binding AvailableText}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+                </Border>
+
                 <!-- Question -->
                 <StackPanel Visibility="{Binding ShowQuestion, Converter={StaticResource BoolToVis}}">
                     <WrapPanel>
@@ -157,10 +218,93 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <TextBlock Text="{Binding Question.CodeCaption}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}"
+                               Margin="0,14,0,-8" Visibility="{Binding Question.HasCodeCaption, Converter={StaticResource BoolToVis}}" />
                     <Border Style="{StaticResource CodeFrame}" Margin="0,14,0,0"
                             Visibility="{Binding Question.HasCode, Converter={StaticResource BoolToVis}}">
                         <views:CodeViewer Code="{Binding Question.Code}" Syntax="{Binding Question.CodeSyntax}" />
                     </Border>
+
+                    <!-- Coding exercise: tests, editor, run -->
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding Question.IsExercise, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="TESTS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4"
+                                   Visibility="{Binding HasTests, Converter={StaticResource BoolToVis}}" />
+                        <ItemsControl ItemsSource="{Binding TestRows}" Focusable="False" Margin="0,0,0,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:TestRow}">
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="22" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="TestIcon" Text="{Binding Icon}" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Call}" FontFamily="{StaticResource CodeFont}" FontSize="13" Margin="0,0,10,0" />
+                                        <TextBlock x:Name="TestDetail" Grid.Column="2" Text="{Binding Detail}" FontFamily="{StaticResource CodeFont}" FontSize="13"
+                                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding State}" Value="Passed">
+                                            <Setter TargetName="TestIcon" Property="Foreground" Value="{DynamicResource CorrectBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Failed">
+                                            <Setter TargetName="TestIcon" Property="Foreground" Value="{DynamicResource WrongBrush}" />
+                                            <Setter TargetName="TestDetail" Property="Foreground" Value="{DynamicResource WrongBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                            <views:CodeEditor x:Name="ExerciseEditor" Height="300"
+                                              Code="{Binding ExerciseCode, Mode=TwoWay}" Syntax="{Binding ExerciseSyntax}"
+                                              IsReadOnly="{Binding ShowFeedback}" />
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding IsAnswering, Converter={StaticResource BoolToVis}}">
+                            <Button Content="{Binding RunButtonText}" Style="{StaticResource PrimaryButton}" Command="{Binding RunCommand}" />
+                            <Button Content="Give up and see a solution" Style="{StaticResource SecondaryButton}" Command="{Binding GiveUpCommand}" />
+                        </StackPanel>
+
+                        <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" TextWrapping="Wrap" Text="{Binding RunSummary}"
+                                   Visibility="{Binding HasRunSummary, Converter={StaticResource BoolToVis}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource CorrectBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RunFailed}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource WrongBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding CompileErrors}" Focusable="False" Margin="0,4,0,0"
+                                      Visibility="{Binding HasCompileErrors, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="{StaticResource CodeFont}" FontSize="13" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource WrongBrush}" Margin="0,2" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <WrapPanel Margin="0,10,0,0">
+                            <views:SqlTableView Table="{Binding SqlUserResult}" Caption="Your result" Margin="0,0,22,10"
+                                                Visibility="{Binding HasSqlUserResult, Converter={StaticResource BoolToVis}}" />
+                            <views:SqlTableView Table="{Binding SqlExpectedResult}" Caption="Expected" Margin="0,0,22,10"
+                                                Visibility="{Binding HasSqlExpectedResult, Converter={StaticResource BoolToVis}}" />
+                        </WrapPanel>
+                        <StackPanel Visibility="{Binding HasRunOutput, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="YOUR CODE PRINTED" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,4" />
+                            <Border Style="{StaticResource CodeFrame}" Padding="10,6">
+                                <TextBlock Text="{Binding RunOutput}" FontFamily="{StaticResource CodeFont}" FontSize="13" TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
 
                     <!-- Multiple choice -->
                     <ItemsControl Margin="0,18,0,0" ItemsSource="{Binding Options}"
@@ -225,14 +369,16 @@
                         Visibility="{Binding ShowFeedback, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource FeedbackTitle}" Text="{Binding Feedback.Title}" />
+                        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Text="{Binding Feedback.Note}"
+                                   Visibility="{Binding Feedback.HasNote, Converter={StaticResource BoolToVis}}" />
                         <StackPanel Margin="0,10,0,0" Visibility="{Binding Feedback.ShowAnswer, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Text="ANSWER" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding Feedback.AnswerLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
                             <TextBlock FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
                                        views:InlineText.Markdown="{Binding Feedback.Answer}"
                                        Visibility="{Binding Feedback.ShowAnswerAsText, Converter={StaticResource BoolToVis}}" />
                             <Border Style="{StaticResource CodeFrame}" Background="{DynamicResource SurfaceBrush}"
                                     Visibility="{Binding Feedback.ShowAnswerAsCode, Converter={StaticResource BoolToVis}}">
-                                <views:CodeViewer Code="{Binding Feedback.Answer}" />
+                                <views:CodeViewer Code="{Binding Feedback.Answer}" Syntax="{Binding Feedback.AnswerSyntax}" />
                             </Border>
                         </StackPanel>
                         <StackPanel Margin="0,12,0,0" Visibility="{Binding Feedback.HasPlan, Converter={StaticResource BoolToVis}}">
@@ -250,6 +396,44 @@
                         </StackPanel>
                         <TextBlock Margin="0,12,0,0" FontSize="14" LineHeight="21" TextWrapping="Wrap"
                                    views:InlineText.Markdown="{Binding Feedback.Explanation}" />
+
+                        <!-- Explain my mistake (Claude) -->
+                        <Button Content="Ask Claude what I got wrong (X)" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                                Margin="0,14,0,0" Command="{Binding ExplainCommand}"
+                                Visibility="{Binding CanExplain, Converter={StaticResource BoolToVis}}" />
+                        <Border Margin="0,14,0,0" Padding="14,10" CornerRadius="6" Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="1"
+                                Visibility="{Binding ShowExplainPanel, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="CLAUDE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,4" />
+                                <TextBlock Text="Thinking…" Foreground="{DynamicResource MutedTextBrush}" FontStyle="Italic">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsExplaining}" Value="True" />
+                                                        <Condition Binding="{Binding ExplainText}" Value="" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock FontSize="14" LineHeight="21" TextWrapping="Wrap" views:InlineText.Markdown="{Binding ExplainText}"
+                                           Visibility="{Binding HasExplainText, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding ExplainError}" Foreground="{DynamicResource WrongBrush}" TextWrapping="Wrap"
+                                           Visibility="{Binding HasExplainError, Converter={StaticResource BoolToVis}}" />
+                                <StackPanel Visibility="{Binding ExplainNeedsKey, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock TextWrapping="Wrap"
+                                               Text="Claude can explain the specific misconception behind your answer. It needs an Anthropic API key: add one in Settings (or set ANTHROPIC_API_KEY)." />
+                                    <Button Content="Open Settings" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                            Command="{Binding OpenSettingsCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
 
@@ -264,6 +448,7 @@
                                TextWrapping="Wrap" TextAlignment="Center" Margin="0,8,0,0" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,26,0,0">
                         <Button Content="Close" Style="{StaticResource PrimaryButton}" Command="{Binding CloseCommand}" />
+                        <Button Content="Study something else…" Style="{StaticResource SecondaryButton}" Command="{Binding ShowPickerCommand}" />
                         <Button Content="Stats" Style="{StaticResource SecondaryButton}" Command="{Binding OpenStatsCommand}" />
                         <Button Content="Settings" Style="{StaticResource SecondaryButton}" Margin="0" Command="{Binding OpenSettingsCommand}" />
                     </StackPanel>
@@ -292,7 +477,7 @@
                         <Button Content="Next (Enter)" Style="{StaticResource PrimaryButton}" Command="{Binding NextCommand}"
                                 Visibility="{Binding Feedback.ShowNext, Converter={StaticResource BoolToVis}}" />
                         <Button Content="I guessed (G)" Style="{StaticResource SecondaryButton}" Command="{Binding GuessedCommand}"
-                                Visibility="{Binding Feedback.IsCorrect, Converter={StaticResource BoolToVis}}" />
+                                Visibility="{Binding Feedback.ShowGuessed, Converter={StaticResource BoolToVis}}" />
                         <Button Content="Too easy (E)" Style="{StaticResource SecondaryButton}" Command="{Binding EasyCommand}"
                                 Visibility="{Binding Feedback.IsCorrect, Converter={StaticResource BoolToVis}}" />
                         <Button Content="I was actually right (O)" Style="{StaticResource SecondaryButton}" Command="{Binding OverrideCommand}"

@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace Quizzler.App.Views;
 
 /// <summary>
-/// Attached property that renders a small subset of Markdown: `code` spans and *emphasis*, e.g.
+/// Attached property that renders a small subset of Markdown: `code` spans, **bold** and *emphasis*, e.g.
 /// <c>&lt;TextBlock views:InlineText.Markdown="{Binding Prompt}" /&gt;</c>.
 /// </summary>
 public static partial class InlineText
@@ -18,8 +18,8 @@ public static partial class InlineText
     public static string? GetMarkdown(DependencyObject o) => (string?)o.GetValue(MarkdownProperty);
     public static void SetMarkdown(DependencyObject o, string? value) => o.SetValue(MarkdownProperty, value);
 
-    // *word* or *a few words*: the opening * must be followed by a non-space, so "a * b" stays literal.
-    [GeneratedRegex(@"\*(?=\S)([^*\n]+?)(?<=\S)\*")]
+    // **bold** or *emphasis*: the opening * must be followed by a non-space, so "a * b" stays literal.
+    [GeneratedRegex(@"(?<stars>\*\*?)(?=\S)(?<text>[^*\n]+?)(?<=\S)\k<stars>")]
     private static partial Regex Emphasis();
 
     private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -48,14 +48,17 @@ public static partial class InlineText
         }
     }
 
-    /// <summary>Plain text, with *emphasis* rendered in italics.</summary>
+    /// <summary>Plain text, with **bold** and *emphasis* (italics).</summary>
     private static void AddProse(TextBlock block, string text)
     {
         var last = 0;
         foreach (Match m in Emphasis().Matches(text))
         {
             if (m.Index > last) block.Inlines.Add(new Run(text[last..m.Index]));
-            block.Inlines.Add(new Run(m.Groups[1].Value) { FontStyle = FontStyles.Italic });
+            var run = new Run(m.Groups["text"].Value);
+            if (m.Groups["stars"].Length == 2) run.FontWeight = FontWeights.SemiBold;
+            else run.FontStyle = FontStyles.Italic;
+            block.Inlines.Add(run);
             last = m.Index + m.Length;
         }
         if (last < text.Length) block.Inlines.Add(new Run(text[last..]));

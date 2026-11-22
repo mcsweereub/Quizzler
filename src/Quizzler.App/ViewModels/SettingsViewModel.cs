@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Quizzler.Ai;
 using Quizzler.App.Services;
 using Quizzler.Core.Scheduling;
 using Quizzler.Core.Study;
@@ -64,6 +65,15 @@ internal sealed class SettingsViewModel : ObservableObject
 
         if (!Intervals.Contains(_reminderInterval)) Intervals = [.. Intervals, _reminderInterval];
 
+        _keys = new ApiKeyStore(db.GetSetting, db.SetOrDeleteSetting);
+        RemoveApiKeyCommand = new RelayCommand(() =>
+        {
+            _removeKey = true;
+            NewApiKey = "";
+            OnPropertyChanged(nameof(ApiKeyStatus));
+            OnPropertyChanged(nameof(CanRemoveApiKey));
+        });
+
         SaveCommand = new RelayCommand(Save);
         CancelCommand = new RelayCommand(Cancel);
         TestNotificationCommand = new RelayCommand(host.SendTestNotification);
@@ -89,6 +99,32 @@ internal sealed class SettingsViewModel : ObservableObject
         new(60, "Every hour"), new(90, "Every 90 minutes"), new(120, "Every 2 hours"),
         new(180, "Every 3 hours"), new(240, "Every 4 hours"),
     ];
+
+    // ------------------------------------------------------------------ Claude (explain my mistake)
+
+    private readonly ApiKeyStore _keys;
+    private bool _removeKey;
+    private string _newApiKey = "";
+
+    /// <summary>Typed into the password box (never read back from storage).</summary>
+    public string NewApiKey
+    {
+        get => _newApiKey;
+        set
+        {
+            if (SetProperty(ref _newApiKey, value) && value.Length > 0) _removeKey = false;
+        }
+    }
+
+    public RelayCommand RemoveApiKeyCommand { get; }
+
+    public bool CanRemoveApiKey => _keys.HasSavedKey && !_removeKey;
+
+    public string ApiKeyStatus =>
+        ApiKeyStore.FromEnvironment is not null ? "Using the ANTHROPIC_API_KEY environment variable."
+        : _removeKey ? "The saved key will be removed when you save."
+        : _keys.HasSavedKey ? "A key is saved (encrypted for your Windows account)."
+        : "No key yet. Without one, \"Ask Claude\" will point you here.";
 
     public RelayCommand SaveCommand { get; }
     public RelayCommand CancelCommand { get; }
@@ -156,6 +192,9 @@ internal sealed class SettingsViewModel : ObservableObject
                 QuietStartHour = QuietHoursEnabled ? QuietStart.Value : 0,
                 QuietEndHour = QuietHoursEnabled ? QuietEnd.Value : 0,
             });
+
+            if (NewApiKey.Trim().Length > 0) _keys.Save(NewApiKey.Trim());
+            else if (_removeKey) _keys.Save(null);
 
             if (StartWithWindows != StartupRegistration.IsEnabled)
             {

@@ -84,6 +84,21 @@
                             Margin="0,16,0,0" Command="{Binding TestNotificationCommand}" />
                 </StackPanel>
 
+                <!-- ============ Claude ============ -->
+                <TextBlock Style="{StaticResource SectionHeader}" Text="Claude" />
+                <TextBlock TextWrapping="Wrap"
+                           Text="After a wrong answer, &quot;Ask Claude what I got wrong&quot; sends the question, the right answer and your answer (or your code and test results) to Claude, which explains the specific misconception. It needs an Anthropic API key from console.anthropic.com, and each explanation costs a cent or two." />
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <PasswordBox x:Name="ApiKeyBox" AutomationProperties.Name="Anthropic API key" PasswordChanged="OnApiKeyChanged" />
+                    <Button Grid.Column="1" Content="Remove saved key" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
+                            Command="{Binding RemoveApiKeyCommand}" Visibility="{Binding CanRemoveApiKey, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+                <TextBlock Style="{StaticResource FieldHint}" Text="{Binding ApiKeyStatus}" />
+
                 <!-- ============ General ============ -->
                 <TextBlock Style="{StaticResource SectionHeader}" Text="General" />
                 <CheckBox Content="Start Quizzler when I sign in to Windows" AutomationProperties.AutomationId="StartWithWindows"

@@ -1,0 +1,181 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "dotnet-runtime-0001",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 2,
+      "tags": ["gc", "generations"],
+      "prompt": "How many generations does the .NET garbage collector split the small-object heap into?",
+      "answer": "3",
+      "accepted": ["Three", "0, 1 and 2", "Gen 0, 1 and 2"],
+      "distractors": ["2", "4", "1"],
+      "explanation": "Generations 0, 1 and 2. New objects start in Gen 0, survivors are promoted, and most objects die young, so collecting Gen 0 often and Gen 2 rarely is cheap."
+    },
+    {
+      "id": "dotnet-runtime-0002",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["gc", "loh"],
+      "prompt": "From what size, by default, does an object go on the Large Object Heap instead of Gen 0?",
+      "answer": "85,000 bytes",
+      "accepted": ["85000 bytes", "85000", "85,000", "85K", "85 KB"],
+      "distractors": ["64 KB", "1 MB", "8,000 bytes"],
+      "explanation": "Objects of 85,000 bytes or more (typically big arrays) go on the LOH. It's collected only with Gen 2 and isn't compacted by default, so churning large buffers is expensive: pool them (ArrayPool<T>) instead."
+    },
+    {
+      "id": "dotnet-runtime-0003",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["gc", "loh"],
+      "prompt": "Which generation is the Large Object Heap collected together with?",
+      "answer": "Generation 2",
+      "accepted": ["Gen 2", "2", "Gen2"],
+      "distractors": ["Generation 0", "Generation 1", "It is never collected"],
+      "explanation": "The LOH is logically part of Gen 2, so a large object is only reclaimed by a full (Gen 2) collection, which is the most expensive kind."
+    },
+    {
+      "id": "dotnet-runtime-0004",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 4,
+      "tags": ["gc", "server-gc", "aspnetcore"],
+      "prompt": "Which GC mode, the default for ASP.NET Core apps, uses a heap and a GC thread per CPU core to maximise throughput?",
+      "answer": "Server GC",
+      "accepted": ["Server garbage collection", "Server"],
+      "distractors": ["Workstation GC", "Concurrent GC", "Background GC"],
+      "explanation": "Server GC trades memory for throughput with per-core heaps. Workstation GC (the default for desktop apps) uses one heap and is tuned for responsiveness; background/concurrent GC is a separate setting that both can use."
+    },
+    {
+      "id": "dotnet-runtime-0005",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["jit", "tiered-compilation"],
+      "prompt": "Which .NET runtime feature first compiles methods quickly with few optimisations, then recompiles the frequently called ones with full optimisation?",
+      "answer": "Tiered compilation",
+      "accepted": ["Tiered JIT", "Tiering"],
+      "distractors": ["ReadyToRun", "Native AOT", "NGen"],
+      "explanation": "Tier 0 gets the app started fast; methods called often are rejitted at Tier 1, using what was observed at runtime (dynamic PGO). ReadyToRun and Native AOT precompile code ahead of time instead."
+    },
+    {
+      "id": "dotnet-runtime-0006",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["aot", "publishing"],
+      "prompt": "Which publish option compiles an app ahead of time into a native executable with no JIT at runtime, at the cost of limits on reflection and dynamic code?",
+      "answer": "Native AOT",
+      "accepted": ["NativeAOT", "AOT", "PublishAot"],
+      "distractors": ["ReadyToRun", "Single-file publish", "Self-contained publish"],
+      "explanation": "Native AOT (PublishAot) gives fast startup and small memory use but can't JIT, so code that generates types at runtime breaks. ReadyToRun also precompiles, but keeps the JIT for everything else."
+    },
+    {
+      "id": "dotnet-runtime-0007",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 4,
+      "tags": ["span", "ref-struct"],
+      "prompt": "`Span<T>` can't be a field of a class, can't be boxed and can't be captured by a lambda. What kind of type is it, which causes these rules?",
+      "answer": "ref struct",
+      "accepted": ["a ref struct", "byref-like type", "ref struct type"],
+      "distractors": ["readonly struct", "record struct", "sealed class"],
+      "explanation": "A ref struct may only live on the stack, because it can point at stack memory (stackalloc) or into the middle of an array. Anything that could move it to the heap (a class field, boxing, a closure, an async method's state) is a compile error."
+    },
+    {
+      "id": "dotnet-runtime-0008",
+      "type": "predict-output",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["span", "memory"],
+      "prompt": "What does this print?",
+      "code": "int[] data = { 1, 2, 3, 4, 5 };\nSpan<int> middle = data.AsSpan(1, 3);\nmiddle[0] = 20;\nmiddle.Reverse();\nConsole.WriteLine(string.Join(\",\", data));",
+      "answer": "1,4,3,20,5",
+      "distractors": ["1,2,3,4,5", "1,20,3,4,5", "5,4,3,20,1"],
+      "explanation": "A span is a view over the array's memory, not a copy, so writes through it change `data`. The span covers 2,3,4; setting the first to 20 gives 20,3,4, and reversing that range gives 4,3,20."
+    },
+    {
+      "id": "dotnet-runtime-0009",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["gc", "memory-leak", "events"],
+      "prompt": "What is the classic cause of a memory leak in a garbage-collected .NET app?",
+      "answer": "An event handler that's never unsubscribed: the long-lived publisher's delegate list keeps the subscriber reachable",
+      "recall": "self",
+      "distractors": [
+        "Two objects that reference each other, so neither can be collected",
+        "Forgetting to set local variables to null when you're done with them",
+        "Not calling GC.Collect() often enough"
+      ],
+      "explanation": "The GC frees anything unreachable, including cycles, so the leaks that remain are things still reachable from a root: event subscriptions, static collections and caches that only grow. Nulling locals and calling GC.Collect don't help."
+    },
+    {
+      "id": "dotnet-runtime-0010",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["gc", "dispose", "finalizer"],
+      "prompt": "Which `GC` method, usually called at the end of `Dispose()`, tells the runtime it no longer needs to run the object's finalizer?",
+      "answer": "GC.SuppressFinalize",
+      "accepted": ["SuppressFinalize", "GC.SuppressFinalize(this)"],
+      "distractors": ["GC.KeepAlive", "GC.Collect", "GC.ReRegisterForFinalize"],
+      "explanation": "Once Dispose has released the resources, the finalizer is redundant. Suppressing it means the object can be freed in one collection instead of surviving an extra one in the finalization queue."
+    },
+    {
+      "id": "dotnet-runtime-0011",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 3,
+      "tags": ["gc", "compaction"],
+      "prompt": "What is it called when the GC slides surviving objects together to remove the gaps left by dead ones?",
+      "answer": "Compaction",
+      "accepted": ["Compacting", "Heap compaction"],
+      "distractors": ["Promotion", "Finalization", "Pinning"],
+      "explanation": "Compaction keeps the heap contiguous, so allocation is just bumping a pointer. Promotion is moving a survivor to the next generation; pinning is what stops an object from being moved."
+    },
+    {
+      "id": "dotnet-runtime-0012",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 4,
+      "tags": ["gc", "pinning"],
+      "prompt": "Why can pinning lots of objects (with `fixed` or a pinned `GCHandle`) hurt GC performance?",
+      "answer": "Pinned objects can't be moved, so the GC can't compact around them and the heap fragments",
+      "recall": "self",
+      "distractors": [
+        "Pinned objects are never collected, even after they're unpinned",
+        "Pinning forces a full Gen 2 collection every time",
+        "Pinned objects are copied onto the Large Object Heap"
+      ],
+      "explanation": "Native code holds the object's address, so the GC must leave it where it is. Long-lived pins in Gen 0 leave holes it can't close. Pin briefly, or use the Pinned Object Heap (GC.AllocateArray with pinned: true) for buffers that stay pinned."
+    },
+    {
+      "id": "dotnet-runtime-0013",
+      "type": "concept",
+      "topic": "dotnet/runtime",
+      "difficulty": 1,
+      "tags": ["il", "jit"],
+      "prompt": "What is the name of the platform-neutral instruction set that C# compiles to, which the JIT turns into machine code?",
+      "answer": "IL",
+      "accepted": ["CIL", "MSIL", "Intermediate Language", "Common Intermediate Language"],
+      "distractors": ["LLVM IR", "WebAssembly", "Assembly language"],
+      "explanation": "The C# compiler emits IL plus metadata into the .dll; at runtime the JIT compiles each method's IL to native code the first time it's called."
+    },
+    {
+      "id": "dotnet-runtime-0014",
+      "type": "predict-output",
+      "topic": "dotnet/runtime",
+      "difficulty": 4,
+      "tags": ["strings", "interning"],
+      "prompt": "What does this print?",
+      "code": "string a = \"a\";\nstring runtime = a + \"b\";\nConsole.WriteLine(object.ReferenceEquals(\"ab\", \"a\" + \"b\"));\nConsole.WriteLine(object.ReferenceEquals(\"ab\", runtime));\nConsole.WriteLine(object.ReferenceEquals(\"ab\", string.Intern(runtime)));",
+      "answer": "True\nFalse\nTrue",
+      "distractors": ["True\nTrue\nTrue", "False\nFalse\nTrue", "True\nFalse\nFalse"],
+      "explanation": "String literals are interned, and `\"a\" + \"b\"` is folded into the literal \"ab\" at compile time. Concatenating at runtime builds a new string object, and `string.Intern` returns the interned copy. That's why strings must be compared with `==`, never by reference."
+    }
+  ]
+}

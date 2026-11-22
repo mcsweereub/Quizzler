@@ -1,0 +1,94 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "cs-exercises-0001",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "csharp/exercises",
+      "difficulty": 2,
+      "tags": ["iterators", "yield", "deferred-execution"],
+      "prompt": "Write `Evens(max)` so it **lazily** yields 0, 2, 4, … up to and including `max`. The last test asks for the first three evens up to `int.MaxValue`, so it must not build a list first.",
+      "starter": "public IEnumerable<int> Evens(int max)\n{\n    \n}",
+      "tests": [
+        { "call": "Evens(6)", "expect": "new[] { 0, 2, 4, 6 }" },
+        { "call": "Evens(5)", "expect": "new[] { 0, 2, 4 }" },
+        { "call": "Evens(0)", "expect": "new[] { 0 }" },
+        { "call": "Evens(int.MaxValue).Take(3)", "expect": "new[] { 0, 2, 4 }" }
+      ],
+      "answer": "public IEnumerable<int> Evens(int max)\n{\n    for (long i = 0; i <= max; i += 2)\n        yield return (int)i;\n}",
+      "explanation": "`yield return` turns the method into an iterator: nothing runs until someone enumerates it, and each value is produced on demand, so Take(3) stops after three. Using a long counter also avoids `i += 2` overflowing past int.MaxValue."
+    },
+    {
+      "id": "cs-exercises-0002",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "csharp/exercises",
+      "difficulty": 2,
+      "tags": ["dictionary", "strings"],
+      "prompt": "Write `CountLetters(text)`: how many times each letter appears, case-insensitively (as lowercase keys). Ignore anything that isn't a letter.",
+      "starter": "public Dictionary<char, int> CountLetters(string text)\n{\n    \n}",
+      "tests": [
+        { "call": "CountLetters(\"Hello\")", "expect": "new Dictionary<char, int> { ['h'] = 1, ['e'] = 1, ['l'] = 2, ['o'] = 1 }" },
+        { "call": "CountLetters(\"A a, b!\")", "expect": "new Dictionary<char, int> { ['a'] = 2, ['b'] = 1 }" },
+        { "call": "CountLetters(\"123 ...\")", "expect": "new Dictionary<char, int>()" }
+      ],
+      "answer": "public Dictionary<char, int> CountLetters(string text)\n{\n    var counts = new Dictionary<char, int>();\n    foreach (var c in text)\n    {\n        if (!char.IsLetter(c)) continue;\n        var key = char.ToLowerInvariant(c);\n        counts[key] = counts.GetValueOrDefault(key) + 1;\n    }\n    return counts;\n}",
+      "explanation": "`counts[key]++` throws KeyNotFoundException for a new key, so read with GetValueOrDefault (or TryGetValue) and write back. Use ToLowerInvariant so the result doesn't depend on the machine's culture."
+    },
+    {
+      "id": "cs-exercises-0003",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "csharp/exercises",
+      "difficulty": 3,
+      "tags": ["linq", "grouping"],
+      "prompt": "Using LINQ, write `TotalsByCustomer(orders)`: each customer's total order value.",
+      "helpers": "public record Order(string Customer, int Total);",
+      "starter": "public Dictionary<string, int> TotalsByCustomer(IEnumerable<Order> orders)\n{\n    \n}",
+      "tests": [
+        { "call": "TotalsByCustomer(new[] { new Order(\"Ada\", 10), new Order(\"Bo\", 5), new Order(\"Ada\", 7) })", "expect": "new Dictionary<string, int> { [\"Ada\"] = 17, [\"Bo\"] = 5 }" },
+        { "call": "TotalsByCustomer(new Order[0])", "expect": "new Dictionary<string, int>()" },
+        { "call": "TotalsByCustomer(new[] { new Order(\"Cy\", 0) })", "expect": "new Dictionary<string, int> { [\"Cy\"] = 0 }" }
+      ],
+      "answer": "public Dictionary<string, int> TotalsByCustomer(IEnumerable<Order> orders) =>\n    orders.GroupBy(o => o.Customer)\n          .ToDictionary(g => g.Key, g => g.Sum(o => o.Total));",
+      "explanation": "GroupBy gives one group per customer and ToDictionary turns each group into key → sum. `ToDictionary(o => o.Customer, ...)` without grouping first throws on the duplicate key \"Ada\"."
+    },
+    {
+      "id": "cs-exercises-0004",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "csharp/exercises",
+      "difficulty": 3,
+      "tags": ["generics", "delegates", "exceptions"],
+      "prompt": "Write a generic `MaxBy(items, key)` that returns the item with the largest key (the first one on a tie), and throws `InvalidOperationException` when `items` is empty. Don't use LINQ's built-in MaxBy.",
+      "starter": "public T MaxBy<T>(IEnumerable<T> items, Func<T, int> key)\n{\n    \n}",
+      "tests": [
+        { "call": "MaxBy(new[] { \"pear\", \"banana\", \"fig\" }, s => s.Length)", "expect": "\"banana\"" },
+        { "call": "MaxBy(new[] { \"ab\", \"cd\" }, s => s.Length)", "expect": "\"ab\"" },
+        { "call": "MaxBy(new[] { -5, -2, -9 }, n => n)", "expect": "-2" },
+        { "call": "try { MaxBy(new string[0], s => s.Length); return \"no exception\"; } catch (InvalidOperationException) { return \"InvalidOperationException\"; }", "expect": "\"InvalidOperationException\"" }
+      ],
+      "answer": "public T MaxBy<T>(IEnumerable<T> items, Func<T, int> key)\n{\n    using var e = items.GetEnumerator();\n    if (!e.MoveNext()) throw new InvalidOperationException(\"Sequence contains no elements.\");\n    T best = e.Current;\n    int bestKey = key(best);\n    while (e.MoveNext())\n    {\n        int k = key(e.Current);\n        if (k > bestKey) { best = e.Current; bestKey = k; } // > keeps the first on a tie\n    }\n    return best;\n}",
+      "explanation": "Start from the first item rather than a sentinel like 0 or int.MinValue, so all-negative keys work and an empty sequence is detected. Enumerating once (instead of calling Any() then looping) also works for sequences that can only be read once."
+    },
+    {
+      "id": "cs-exercises-0005",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "csharp/exercises",
+      "difficulty": 2,
+      "tags": ["strings", "two-pointers"],
+      "prompt": "Write `IsPalindrome(s)`: true if `s` reads the same forwards and backwards, ignoring case and anything that isn't a letter or digit.",
+      "starter": "public bool IsPalindrome(string s)\n{\n    \n}",
+      "tests": [
+        { "call": "IsPalindrome(\"A man, a plan, a canal: Panama\")", "expect": "true" },
+        { "call": "IsPalindrome(\"race a car\")", "expect": "false" },
+        { "call": "IsPalindrome(\" \")", "expect": "true" },
+        { "call": "IsPalindrome(\"0P\")", "expect": "false" }
+      ],
+      "answer": "public bool IsPalindrome(string s)\n{\n    int i = 0, j = s.Length - 1;\n    while (i < j)\n    {\n        if (!char.IsLetterOrDigit(s[i])) { i++; continue; }\n        if (!char.IsLetterOrDigit(s[j])) { j--; continue; }\n        if (char.ToLowerInvariant(s[i]) != char.ToLowerInvariant(s[j])) return false;\n        i++; j--;\n    }\n    return true;\n}",
+      "explanation": "Two pointers from both ends, skipping characters that don't count: O(n) with no extra string. \"0P\" catches solutions that only keep letters (dropping the digit 0)."
+    }
+  ]
+}

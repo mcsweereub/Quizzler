@@ -1,0 +1,182 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "git-basics-0001",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 2,
+      "tags": ["diff", "staging"],
+      "prompt": "Which command shows the changes you've staged for the next commit?",
+      "answer": "git diff --staged",
+      "accepted": ["git diff --cached"],
+      "distractors": ["git diff", "git status", "git log -p"],
+      "explanation": "Plain `git diff` compares the working tree with the index (unstaged changes); `--staged` compares the index with HEAD, i.e. what would be committed."
+    },
+    {
+      "id": "git-basics-0002",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 2,
+      "tags": ["merge", "rebase"],
+      "prompt": "What is the difference between `git merge main` and `git rebase main` on a feature branch?",
+      "answer": "Merge adds a merge commit and keeps history as it happened; rebase replays your commits on top of main as new commits, giving linear history",
+      "recall": "self",
+      "distractors": [
+        "Rebase deletes main's new commits from your branch",
+        "Merge rewrites your branch's commit hashes; rebase leaves them alone",
+        "They produce identical history; rebase is just faster"
+      ],
+      "explanation": "Both end up with the same code. Rebase rewrites your commits (new hashes) so history reads as if you started from the latest main; merge preserves the real branching."
+    },
+    {
+      "id": "git-basics-0003",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["rebase", "collaboration"],
+      "prompt": "Why shouldn't you rebase commits that others have already pulled from a shared branch?",
+      "answer": "Rebase replaces them with new commits (new hashes), so anyone who built on the old ones ends up with diverged, duplicated history, and you have to force-push",
+      "recall": "self",
+      "distractors": [
+        "Git refuses to rebase commits that have been pushed",
+        "Rebasing pushed commits deletes them from the remote immediately",
+        "Rebase only works on commits that exist locally"
+      ],
+      "explanation": "Rewriting is fine on your own unpublished branch. On shared history, use merge or revert, which only add commits."
+    },
+    {
+      "id": "git-basics-0004",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 2,
+      "tags": ["revert", "undo"],
+      "prompt": "Which command safely undoes a commit that's already been pushed, by adding a new commit that reverses it?",
+      "answer": "git revert",
+      "accepted": ["git revert <commit>"],
+      "distractors": ["git reset --hard", "git checkout", "git restore"],
+      "explanation": "revert adds history instead of removing it, so nobody else's clone breaks. reset moves your branch backwards, which needs a force-push once the commit is shared."
+    },
+    {
+      "id": "git-basics-0005",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["reset", "undo"],
+      "prompt": "What does `git reset --soft HEAD~1` do?",
+      "answer": "Undoes the last commit but keeps its changes staged",
+      "recall": "self",
+      "distractors": [
+        "Undoes the last commit and keeps its changes in the working tree, unstaged",
+        "Undoes the last commit and throws its changes away",
+        "Adds a new commit that reverses the last one"
+      ],
+      "explanation": "--soft moves the branch only; --mixed (the default) also resets the index, leaving the changes unstaged; --hard resets the working tree too, discarding them."
+    },
+    {
+      "id": "git-basics-0006",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 1,
+      "tags": ["stash"],
+      "prompt": "Which command shelves your uncommitted changes so you can switch branches with a clean working tree, and bring them back later?",
+      "answer": "git stash",
+      "accepted": ["git stash push"],
+      "distractors": ["git reset", "git checkout -- .", "git commit --amend"],
+      "explanation": "`git stash` saves the changes on a stack and cleans the working tree; `git stash pop` reapplies them. `git checkout -- .` would just discard them."
+    },
+    {
+      "id": "git-basics-0007",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["head", "branches"],
+      "prompt": "What is a \"detached HEAD\" in git?",
+      "answer": "HEAD points directly at a commit instead of a branch, so new commits belong to no branch and are easy to lose when you switch away",
+      "recall": "self",
+      "distractors": [
+        "The remote branch you were tracking has been deleted",
+        "A merge or rebase stopped halfway with conflicts",
+        "HEAD points at a branch with no commits yet"
+      ],
+      "explanation": "Checking out a tag or a commit hash detaches HEAD. That's fine for looking around; to keep work done there, create a branch (`git switch -c name`)."
+    },
+    {
+      "id": "git-basics-0008",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["bisect", "debugging"],
+      "prompt": "Which git command finds the commit that introduced a bug by binary searching through history?",
+      "answer": "git bisect",
+      "distractors": ["git blame", "git log -S", "git reflog"],
+      "explanation": "Mark one good and one bad commit and bisect checks out the midpoint each time; `git bisect run <test>` automates it. blame shows who last changed each line, not when the behaviour broke."
+    },
+    {
+      "id": "git-basics-0009",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["reflog", "recovery"],
+      "prompt": "Which command lists everywhere HEAD has pointed recently, so you can recover commits \"lost\" after a reset or a bad rebase?",
+      "answer": "git reflog",
+      "distractors": ["git log --all", "git fsck", "git stash list"],
+      "explanation": "The reflog is a local history of HEAD movements. Find the hash from before the mistake and `git reset --hard` to it (or branch from it)."
+    },
+    {
+      "id": "git-basics-0010",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 1,
+      "tags": ["fetch", "pull", "remotes"],
+      "prompt": "What is the difference between `git fetch` and `git pull`?",
+      "answer": "fetch downloads new commits and updates the remote-tracking branches only; pull is a fetch followed by a merge (or rebase) into your current branch",
+      "recall": "self",
+      "distractors": [
+        "fetch updates your working tree; pull only downloads",
+        "fetch downloads branch names only, not commits",
+        "They're aliases for the same command"
+      ],
+      "explanation": "Fetching is always safe: it never touches your branches or files. Fetch first and inspect `origin/main` if you want to see what a pull would bring in."
+    },
+    {
+      "id": "git-basics-0011",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 2,
+      "tags": ["commit", "amend"],
+      "prompt": "Which command changes the message (or adds staged changes to) the most recent commit?",
+      "answer": "git commit --amend",
+      "distractors": ["git rebase --continue", "git reset --soft HEAD", "git revert HEAD"],
+      "explanation": "--amend replaces the last commit with a new one. It's a rewrite, so don't amend a commit you've already pushed to a shared branch."
+    },
+    {
+      "id": "git-basics-0012",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 3,
+      "tags": ["push", "force-push"],
+      "prompt": "Which `git push` option force-pushes only if the remote branch is still where you last saw it, refusing if someone else pushed in the meantime?",
+      "answer": "--force-with-lease",
+      "accepted": ["git push --force-with-lease"],
+      "distractors": ["--force", "--no-verify", "--set-upstream"],
+      "explanation": "Plain --force overwrites whatever is on the remote, including a colleague's new commits. --force-with-lease checks first."
+    },
+    {
+      "id": "git-basics-0013",
+      "type": "concept",
+      "topic": "git/basics",
+      "difficulty": 2,
+      "tags": ["merge", "fast-forward"],
+      "prompt": "What is a \"fast-forward\" merge?",
+      "answer": "When the target branch hasn't moved since you branched, git just moves its pointer up to your latest commit: no merge commit",
+      "recall": "self",
+      "distractors": [
+        "A merge that skips running the hooks",
+        "A merge that squashes all your commits into one",
+        "A merge that automatically resolves conflicts in your favour"
+      ],
+      "explanation": "There's nothing to combine, so the history stays linear. `--no-ff` forces a merge commit anyway, to record that a branch existed."
+    }
+  ]
+}

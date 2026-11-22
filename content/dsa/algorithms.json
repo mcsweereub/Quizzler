@@ -1,0 +1,152 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "dsa-algorithms-0001",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["hashing", "two-sum"],
+      "prompt": "Which data structure turns \"find two numbers in an array that add up to a target\" from O(n²) into a single O(n) pass?",
+      "answer": "A hash map",
+      "accepted": ["Hash map", "Dictionary", "Hash table", "HashSet", "Hash set", "A dictionary"],
+      "distractors": ["A sorted array with binary search", "A balanced binary search tree", "A stack"],
+      "explanation": "For each number, check whether `target - number` is already in the map (O(1) on average), then add the number. Sorting plus two pointers works too, but costs O(n log n)."
+    },
+    {
+      "id": "dsa-algorithms-0002",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["two-pointers"],
+      "prompt": "What is the technique called where two indices start at opposite ends of a sorted array and move towards each other?",
+      "answer": "Two pointers",
+      "accepted": ["Two-pointer technique", "Two pointer", "Two-pointer"],
+      "distractors": ["Sliding window", "Divide and conquer", "Backtracking"],
+      "explanation": "Each step discards one end, giving O(n): e.g. pair sums in a sorted array, or checking a palindrome. A sliding window also uses two indices, but both move forward to grow and shrink a range."
+    },
+    {
+      "id": "dsa-algorithms-0003",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 3,
+      "tags": ["sliding-window"],
+      "prompt": "Which technique finds the longest substring without repeating characters in O(n), growing a range on the right and shrinking it from the left?",
+      "answer": "Sliding window",
+      "accepted": ["A sliding window"],
+      "distractors": ["Dynamic programming", "Backtracking", "Binary search"],
+      "explanation": "Each character enters and leaves the window at most once, so the whole scan is linear. A set or last-seen map tells you when to move the left edge."
+    },
+    {
+      "id": "dsa-algorithms-0004",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["memoization", "dynamic-programming"],
+      "prompt": "What is memoisation?",
+      "answer": "Caching a function's results by its arguments, so repeated calls (overlapping subproblems) are answered from the cache",
+      "recall": "self",
+      "distractors": [
+        "Storing a function's local variables on the heap instead of the stack",
+        "Rewriting a recursive function as a loop",
+        "Precomputing every possible input before the program starts"
+      ],
+      "explanation": "Naive recursive Fibonacci makes exponentially many calls; memoised, each n is computed once, which makes it O(n). It's top-down dynamic programming."
+    },
+    {
+      "id": "dsa-algorithms-0005",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["graphs", "shortest-path"],
+      "prompt": "Which algorithm finds the shortest paths from one node to every other node in a graph whose edge weights are non-negative?",
+      "answer": "Dijkstra's algorithm",
+      "accepted": ["Dijkstra", "Dijkstra's"],
+      "distractors": ["Breadth-first search", "Depth-first search", "Kruskal's algorithm"],
+      "explanation": "Dijkstra repeatedly takes the closest unvisited node from a priority queue. BFS gives shortest paths only when every edge has the same weight; Kruskal builds a minimum spanning tree, which is a different problem."
+    },
+    {
+      "id": "dsa-algorithms-0006",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 3,
+      "tags": ["graphs", "topological-sort"],
+      "prompt": "Which algorithm orders the nodes of a directed acyclic graph so every edge points from an earlier node to a later one, e.g. a build order for dependencies?",
+      "answer": "Topological sort",
+      "accepted": ["Topological sorting", "Toposort", "Topological ordering"],
+      "distractors": ["Dijkstra's algorithm", "Minimum spanning tree", "Binary search"],
+      "explanation": "Kahn's algorithm repeatedly removes nodes with no incoming edges; a DFS version outputs nodes in reverse post-order. If nodes are left over, the graph has a cycle."
+    },
+    {
+      "id": "dsa-algorithms-0007",
+      "type": "predict-output",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["binary-search"],
+      "prompt": "How many times does this loop run before it finds 7?",
+      "code": "int[] a = { 1, 3, 5, 7, 9, 11 };\nint lo = 0, hi = a.Length - 1, steps = 0;\nwhile (lo <= hi)\n{\n    int mid = lo + (hi - lo) / 2;\n    steps++;\n    if (a[mid] == 7) break;\n    if (a[mid] < 7) lo = mid + 1; else hi = mid - 1;\n}\nConsole.WriteLine(steps);",
+      "answer": "3",
+      "distractors": ["2", "4", "6"],
+      "explanation": "mid = 2 (5, go right), then lo = 3, hi = 5 gives mid = 4 (9, go left), then lo = hi = 3 gives mid = 3, found. Integer division rounds the midpoint down, which is why it doesn't land on 7 at the second step."
+    },
+    {
+      "id": "dsa-algorithms-0008",
+      "type": "predict-output",
+      "topic": "dsa/algorithms",
+      "difficulty": 3,
+      "tags": ["sorting", "stable-sort", "linq"],
+      "prompt": "What does this print?",
+      "code": "var people = new[] { (\"Ann\", 30), (\"Bob\", 25), (\"Cat\", 30), (\"Dan\", 25) };\nforeach (var p in people.OrderBy(p => p.Item2))\n    Console.Write(p.Item1 + \" \");",
+      "answer": "Bob Dan Ann Cat",
+      "distractors": ["Dan Bob Cat Ann", "Bob Dan Cat Ann", "Ann Cat Bob Dan"],
+      "explanation": "LINQ's OrderBy is a stable sort: items with equal keys keep their original order, so Bob stays before Dan and Ann before Cat. `Array.Sort` and `List<T>.Sort` are not stable."
+    },
+    {
+      "id": "dsa-algorithms-0009",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 4,
+      "tags": ["heap", "complexity"],
+      "prompt": "What is the time complexity of building a binary heap from n unsorted items with bottom-up heapify?",
+      "answer": "O(n)",
+      "distractors": ["O(n log n)", "O(log n)", "O(n²)"],
+      "explanation": "Inserting one item at a time costs O(n log n), but sifting down from the last parent upwards is O(n): most nodes are near the bottom and move only a level or two."
+    },
+    {
+      "id": "dsa-algorithms-0010",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 3,
+      "tags": ["trie", "strings"],
+      "prompt": "Which tree data structure stores strings one character per level, so all words with a given prefix are found quickly (e.g. for autocomplete)?",
+      "answer": "Trie",
+      "accepted": ["Prefix tree", "A trie"],
+      "distractors": ["Heap", "B-tree", "Red-black tree"],
+      "explanation": "Finding a prefix costs O(length of the prefix), however many words are stored. A hash table can't answer \"everything starting with abc\" without scanning every key."
+    },
+    {
+      "id": "dsa-algorithms-0011",
+      "type": "predict-output",
+      "topic": "dsa/algorithms",
+      "difficulty": 3,
+      "tags": ["recursion", "memoization"],
+      "prompt": "What does this print?",
+      "code": "int calls = 0;\nConsole.WriteLine(Fib(5) + \" \" + calls);\n\nint Fib(int n)\n{\n    calls++;\n    return n < 2 ? n : Fib(n - 1) + Fib(n - 2);\n}",
+      "answer": "5 15",
+      "distractors": ["5 0", "5 5", "8 15"],
+      "explanation": "Naive recursion recomputes the same subproblems: calls(n) = 1 + calls(n-1) + calls(n-2), giving 1, 1, 3, 5, 9, 15 for n = 0..5. The local function captures `calls` itself (not a copy), and operands are evaluated left to right, so it's read after Fib(5) has finished."
+    },
+    {
+      "id": "dsa-algorithms-0012",
+      "type": "concept",
+      "topic": "dsa/algorithms",
+      "difficulty": 2,
+      "tags": ["sorting", "merge-sort"],
+      "prompt": "Which sorting algorithm is O(n log n) even in the worst case and stable, but needs O(n) extra memory?",
+      "answer": "Merge sort",
+      "accepted": ["Mergesort"],
+      "distractors": ["Quicksort", "Heapsort", "Insertion sort"],
+      "explanation": "Merge sort always halves the input and merges in linear time, using a buffer. Quicksort is O(n²) in its worst case; heapsort is O(n log n) and in place but not stable."
+    }
+  ]
+}

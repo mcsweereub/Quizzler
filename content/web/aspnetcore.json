@@ -1,0 +1,176 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "web-aspnetcore-0001",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 2,
+      "tags": ["dependency-injection", "lifetimes"],
+      "prompt": "Which ASP.NET Core DI lifetime gives one instance per HTTP request?",
+      "answer": "Scoped",
+      "accepted": ["AddScoped"],
+      "distractors": ["Transient", "Singleton", "Per-thread"],
+      "explanation": "Scoped services live for the request's scope (DbContext is the classic example). Transient is a new instance every time it's resolved, even twice in one request; singleton is one for the app's lifetime."
+    },
+    {
+      "id": "web-aspnetcore-0002",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 3,
+      "tags": ["dependency-injection", "lifetimes", "captive-dependency"],
+      "prompt": "What goes wrong when a singleton service takes a scoped service, such as a DbContext, in its constructor?",
+      "answer": "The scoped instance is captured for the app's lifetime (a captive dependency): one DbContext shared by every request and thread",
+      "recall": "self",
+      "distractors": [
+        "Nothing: the container hands the singleton a fresh scoped instance on each request",
+        "The singleton gets re-created for every request instead",
+        "It doesn't compile"
+      ],
+      "explanation": "The singleton is built once, so whatever it was given stays with it. A shared DbContext isn't thread-safe and keeps tracking entities forever. In Development, scope validation throws at startup to catch this; inject IServiceScopeFactory and create a scope per unit of work instead."
+    },
+    {
+      "id": "web-aspnetcore-0003",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 2,
+      "tags": ["middleware", "pipeline"],
+      "prompt": "What happens to a request when an ASP.NET Core middleware doesn't call `next()`?",
+      "answer": "The pipeline short-circuits: later middleware and the endpoint never run, and this middleware's response is sent",
+      "recall": "self",
+      "distractors": [
+        "The framework calls next() automatically after the middleware returns",
+        "The request fails with a 500 error",
+        "Later middleware still runs, but can't change the response"
+      ],
+      "explanation": "Middleware forms a chain where each one decides whether to pass the request on. Static files and auth failures short-circuit on purpose; forgetting `await next(context)` does it by accident."
+    },
+    {
+      "id": "web-aspnetcore-0004",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 2,
+      "tags": ["middleware", "authentication", "authorization"],
+      "prompt": "Which must come first in the middleware pipeline: `UseAuthentication()` or `UseAuthorization()`?",
+      "answer": "UseAuthentication",
+      "accepted": ["UseAuthentication()", "app.UseAuthentication()", "Authentication"],
+      "distractors": ["UseAuthorization", "Order doesn't matter"],
+      "explanation": "Authentication works out who the user is (sets HttpContext.User); authorization then decides what they may do. The other way round, authorization sees an anonymous user and rejects everything."
+    },
+    {
+      "id": "web-aspnetcore-0005",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 1,
+      "tags": ["http", "status-codes"],
+      "prompt": "Which HTTP status code means \"no valid credentials, please authenticate\", as opposed to 403 \"authenticated but not allowed\"?",
+      "answer": "401",
+      "accepted": ["401 Unauthorized"],
+      "distractors": ["403", "400", "407"],
+      "explanation": "Despite its name, 401 Unauthorized means unauthenticated. 403 Forbidden means the server knows who you are and the answer is still no."
+    },
+    {
+      "id": "web-aspnetcore-0006",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 2,
+      "tags": ["controllers", "model-binding", "validation"],
+      "prompt": "Which attribute on a controller turns on automatic 400 responses for invalid models and infers `[FromBody]` for complex parameters?",
+      "answer": "[ApiController]",
+      "accepted": ["ApiController"],
+      "distractors": ["[Route]", "[Produces]", "[FromBody]"],
+      "explanation": "[ApiController] adds API conventions: ModelState is checked for you (returning a ProblemDetails 400), attribute routing is required, and binding sources are inferred."
+    },
+    {
+      "id": "web-aspnetcore-0007",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 3,
+      "tags": ["httpclient", "dependency-injection"],
+      "prompt": "Which interface do you inject to create `HttpClient` instances in ASP.NET Core, so connections are pooled and DNS changes are still picked up?",
+      "answer": "IHttpClientFactory",
+      "distractors": ["HttpClientHandler", "IHttpContextAccessor", "WebClient"],
+      "explanation": "IHttpClientFactory (via AddHttpClient) reuses and periodically recycles the underlying handlers. That avoids both socket exhaustion from creating clients per request and stale DNS from one static client living forever."
+    },
+    {
+      "id": "web-aspnetcore-0008",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 3,
+      "tags": ["httpclient", "sockets"],
+      "prompt": "What's wrong with `using var client = new HttpClient();` inside every request handler?",
+      "answer": "Each disposed client leaves its connection in TIME_WAIT, so under load the server runs out of sockets (socket exhaustion)",
+      "recall": "self",
+      "distractors": [
+        "Nothing: HttpClient isn't thread-safe, so one per request is the correct pattern",
+        "Disposing one HttpClient cancels requests running on the other instances",
+        "The using block disposes the client before the response arrives"
+      ],
+      "explanation": "HttpClient is designed to be reused and is safe to share across threads. Creating and disposing one per request throws away pooled connections; use IHttpClientFactory or a long-lived client with SocketsHttpHandler.PooledConnectionLifetime."
+    },
+    {
+      "id": "web-aspnetcore-0009",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 4,
+      "tags": ["async", "thread-pool", "sync-over-async"],
+      "prompt": "Why should you avoid `.Result` or `.Wait()` on async calls inside an ASP.NET Core request?",
+      "answer": "It blocks a thread-pool thread while waiting, so under load the pool starves and throughput collapses",
+      "recall": "self",
+      "distractors": [
+        "It deadlocks on every call, because of ASP.NET Core's SynchronizationContext",
+        "It's harmless: each request has its own dedicated thread",
+        "It makes the async method run twice"
+      ],
+      "explanation": "ASP.NET Core has no SynchronizationContext, so the classic UI-style deadlock doesn't happen there. The cost is thread-pool starvation: blocked threads can't serve other requests, and the pool only adds threads slowly."
+    },
+    {
+      "id": "web-aspnetcore-0010",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 1,
+      "tags": ["minimal-apis", "routing"],
+      "prompt": "Which method maps a minimal API endpoint for HTTP GET, e.g. `app.____(\"/todos\", ...)`?",
+      "answer": "MapGet",
+      "accepted": ["app.MapGet"],
+      "distractors": ["UseGet", "AddGet", "MapControllers"],
+      "explanation": "Minimal APIs use MapGet, MapPost, MapPut and MapDelete on the WebApplication. `Use...` methods add middleware and `Add...` methods register services."
+    },
+    {
+      "id": "web-aspnetcore-0011",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 4,
+      "tags": ["configuration", "options"],
+      "prompt": "Which options interface is registered as scoped and recomputes the options once per request, so edits to appsettings.json show up in the next request?",
+      "answer": "IOptionsSnapshot<T>",
+      "accepted": ["IOptionsSnapshot"],
+      "distractors": ["IOptions<T>", "IOptionsMonitor<T>", "IConfiguration"],
+      "explanation": "IOptions<T> is a singleton read once at startup. IOptionsMonitor<T> is also a singleton but tracks changes (with OnChange callbacks), so it suits singletons; IOptionsSnapshot<T> gives a consistent per-request value."
+    },
+    {
+      "id": "web-aspnetcore-0012",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 3,
+      "tags": ["configuration"],
+      "prompt": "With the default configuration sources, which wins when the same key is set in appsettings.json, an environment variable and a command-line argument?",
+      "answer": "The command-line argument",
+      "accepted": ["Command-line argument", "Command line", "Command-line arguments", "Command-line"],
+      "distractors": ["The environment variable", "appsettings.json", "appsettings.{Environment}.json"],
+      "explanation": "Sources added later override earlier ones: appsettings.json, then appsettings.{Environment}.json, user secrets (in Development), environment variables, and finally command-line arguments."
+    },
+    {
+      "id": "web-aspnetcore-0013",
+      "type": "concept",
+      "topic": "web/aspnetcore",
+      "difficulty": 1,
+      "tags": ["cors", "security"],
+      "prompt": "Which mechanism lets JavaScript on one origin call your API on another origin, controlled by response headers such as `Access-Control-Allow-Origin`?",
+      "answer": "CORS",
+      "accepted": ["Cross-Origin Resource Sharing"],
+      "distractors": ["CSRF", "CSP", "HSTS"],
+      "explanation": "Browsers block cross-origin requests unless the server opts in with CORS headers (UseCors in ASP.NET Core). CSRF is an attack, CSP restricts what a page may load, and HSTS forces HTTPS."
+    }
+  ]
+}

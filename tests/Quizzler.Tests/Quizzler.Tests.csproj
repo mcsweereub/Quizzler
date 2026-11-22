@@ -26,6 +26,9 @@
     <ProjectReference Include="..\..\src\Quizzler.Core\Quizzler.Core.csproj" />
     <ProjectReference Include="..\..\src\Quizzler.CodeRunner\Quizzler.CodeRunner.csproj" />
     <ProjectReference Include="..\..\src\Quizzler.Data\Quizzler.Data.csproj" />
+    <ProjectReference Include="..\..\src\Quizzler.Ai\Quizzler.Ai.csproj" />
+    <!-- Exercise tests run code in Quizzler.Sandbox.exe, which must sit next to the test assembly. -->
+    <ProjectReference Include="..\..\src\Quizzler.Sandbox\Quizzler.Sandbox.csproj" />
   </ItemGroup>
 
   <!-- Content validation tests read the real question bank from the repo. -->

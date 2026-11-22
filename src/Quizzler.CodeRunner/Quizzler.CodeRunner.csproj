@@ -7,6 +7,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Quizzler.Core\Quizzler.Core.csproj" />
     <ProjectReference Include="..\Quizzler.Data\Quizzler.Data.csproj" />
+    <!--
+      Apps that run exercises must reference Quizzler.Sandbox themselves (so Quizzler.Sandbox.exe is built with the
+      app's runtime identifier and lands next to it). Referencing it from here as well builds it twice and breaks
+      self-contained publishing (NETSDK1152).
+    -->
   </ItemGroup>
 
 </Project>

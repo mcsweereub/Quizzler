@@ -49,8 +49,18 @@ public sealed class QuizService(IQuizStore store, ReviewEngine engine, TimeProvi
         }
     }
 
-    public SessionPlan PlanSession() =>
-        SessionPlanner.Plan(store.GetActiveQuestions(), store.GetCards(), store.GetStudySettings(), Now);
+    public SessionPlan PlanSession(SessionFilter? filter = null) =>
+        SessionPlanner.Plan(store.GetActiveQuestions(), store.GetCards(), store.GetStudySettings(), Now, filter);
+
+    /// <summary>How many questions each filter would give right now (one database read for all of them).</summary>
+    public IReadOnlyList<SessionPlan> PlanSessions(IEnumerable<SessionFilter> filters)
+    {
+        var questions = store.GetActiveQuestions();
+        var cards = store.GetCards();
+        var settings = store.GetStudySettings();
+        var now = Now;
+        return filters.Select(f => SessionPlanner.Plan(questions, cards, settings, now, f)).ToList();
+    }
 
     public DueSummary GetDueSummary()
     {

@@ -38,12 +38,14 @@ public static class ContentVerifier
         {
             QuestionType.PredictOutput => !string.IsNullOrWhiteSpace(q.Code),
             QuestionType.PredictResult => !string.IsNullOrWhiteSpace(q.Code) && !string.IsNullOrWhiteSpace(q.Setup),
+            QuestionType.WriteCode => q.Language is not null,
             _ => false,
         };
 
     public static async Task<IReadOnlyList<string>> VerifyOneAsync(Question q)
     {
         if (q.Type == QuestionType.PredictResult) return VerifySql(q);
+        if (q.Type == QuestionType.WriteCode) return await VerifyExerciseAsync(q);
 
         var result = await CSharpRunner.RunAsync(q.Code!);
 
@@ -104,6 +106,36 @@ public static class ContentVerifier
 
         if (run.Tables.Count == 0)
             messages.Add("Setup creates no tables to show.");
+
+        return messages;
+    }
+
+    /// <summary>The reference solution (the answer) must pass every test; for SQL, it must run and return rows.</summary>
+    public static async Task<IReadOnlyList<string>> VerifyExerciseAsync(Question q)
+    {
+        ExerciseResult result;
+        try
+        {
+            result = await ExerciseRunner.RunAsync(q, q.Answer);
+        }
+        catch (SqlRunException ex)
+        {
+            return [$"SQL error in the setup or reference query (SQLite dialect): {ex.Message}"];
+        }
+
+        var messages = new List<string>();
+        if (!result.AllPassed)
+            messages.Add("The reference solution ('answer') doesn't pass:\n  " + result.Describe().ReplaceLineEndings("\n  "));
+
+        if (q.Language == ExerciseLanguage.Sql && result.Sql is { } sql)
+        {
+            if (sql.Expected.Rows.Count == 0) messages.Add("The reference query returns no rows, so any empty query would pass. Change the data or the query.");
+            if (sql.Tables.Count == 0) messages.Add("Setup creates no tables to show.");
+        }
+
+        // A starter that already passes means the exercise asks for nothing.
+        if (!string.IsNullOrWhiteSpace(q.Starter) && (await ExerciseRunner.RunAsync(q, q.Starter)).AllPassed)
+            messages.Add("The starter code already passes every test.");
 
         return messages;
     }

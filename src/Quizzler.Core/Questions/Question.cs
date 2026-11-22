@@ -16,7 +16,32 @@ public enum QuestionType
     /// its result (rows, or the row count when <see cref="Question.Expect"/> is <see cref="ResultExpectation.RowCount"/>).
     /// </summary>
     PredictResult,
+
+    /// <summary>
+    /// A coding exercise: the user writes code (C# or SQL, see <see cref="Question.Language"/>) and it's graded by running it.
+    /// C#: <see cref="Question.Tests"/> call the user's methods. SQL: the user's query must return the same rows as
+    /// <see cref="Question.Answer"/> (the reference query) on <see cref="Question.Setup"/>.
+    /// </summary>
+    WriteCode,
 }
+
+/// <summary>The language of a write-code exercise.</summary>
+public enum ExerciseLanguage
+{
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("csharp")]
+    CSharp,
+
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("sql")]
+    Sql,
+}
+
+/// <summary>
+/// One test of a C# exercise. <see cref="Call"/> is a C# expression evaluated inside the user's Solution class
+/// (e.g. <c>TwoSum(new[] { 2, 7, 11 }, 9)</c>), or a block with a <c>return</c> statement; <see cref="Expect"/> is
+/// a C# expression for the expected value. Both are compared by their printed form, so collections compare by content.
+/// </summary>
+/// <param name="Unordered">The result is a collection whose order doesn't matter.</param>
+public sealed record CodeTest(string Call, string Expect, bool Unordered = false);
 
 /// <summary>What a predict-result answer describes.</summary>
 public enum ResultExpectation
@@ -96,6 +121,21 @@ public sealed record Question
     /// </summary>
     public string? PlanTable { get; init; }
 
+    /// <summary>write-code only: the language the user writes in.</summary>
+    public ExerciseLanguage? Language { get; init; }
+
+    /// <summary>write-code only: code the editor starts with (usually the method signature).</summary>
+    public string? Starter { get; init; }
+
+    /// <summary>
+    /// write-code (C#) only: code provided to both the user's code and the tests, e.g. a <c>ListNode</c> class and
+    /// helpers that build lists from arrays. Shown read-only under the prompt.
+    /// </summary>
+    public string? Helpers { get; init; }
+
+    /// <summary>write-code (C#) only: the tests the user's code must pass.</summary>
+    public IReadOnlyList<CodeTest> Tests { get; init; } = [];
+
     /// <summary>The canonical correct answer. Shown as the right option in multiple-choice mode.</summary>
     public string Answer { get; init; } = "";
 
@@ -113,4 +153,6 @@ public sealed record Question
 
     public RecallGrading EffectiveRecall =>
         Recall ?? (Type == QuestionType.PickTheCode ? RecallGrading.Self : RecallGrading.Exact);
+
+    public bool IsExercise => Type == QuestionType.WriteCode;
 }

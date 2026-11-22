@@ -31,16 +31,25 @@ public sealed class StudySession
 
     private bool _ended;
 
-    public StudySession(QuizService service, SessionPlan plan, Random? random = null)
+    public StudySession(QuizService service, SessionPlan plan, Random? random = null, SessionFilter? filter = null)
     {
         _service = service;
         _items = plan.Items;
         _random = random ?? new Random();
+        Filter = filter ?? SessionFilter.Everything;
         if (_items.Count > 0)
-            _service.LogEvent(StudyEvent.SessionStarted, $"{plan.DueReviews} reviews, {plan.NewCards} new");
+        {
+            var detail = $"{plan.DueReviews} reviews, {plan.NewCards} new";
+            if (!Filter.IsEverything) detail += $"; filter {Filter.Serialize()}";
+            _service.LogEvent(StudyEvent.SessionStarted, detail);
+        }
         else
+        {
             _ended = true;
+        }
     }
+
+    public SessionFilter Filter { get; }
 
     /// <summary>Logs the end of the session (once). Called automatically when the last question is done; call it if the user quits early.</summary>
     public void End()
@@ -76,7 +85,7 @@ public sealed class StudySession
             return false;
         }
 
-        if (item.Stage == CardStage.MultipleChoice)
+        if (item.Stage == CardStage.MultipleChoice && !item.Question.IsExercise)
             Choices = MultipleChoice.Build(item.Question, _random);
         _stopwatch.Restart();
         return true;
@@ -96,6 +105,7 @@ public sealed class StudySession
     public PendingAnswer SubmitTyped(string text)
     {
         var item = RequireUnanswered();
+        if (item.Question.IsExercise) throw new InvalidOperationException("Exercises are graded by running them; use SubmitExercise.");
         if (item.Stage != CardStage.Typed) throw new InvalidOperationException("Current question is multiple choice.");
 
         _stopwatch.Stop();
@@ -106,6 +116,19 @@ public sealed class StudySession
             _ => AnswerState.NeedsSelfGrade,
         };
         return Pending = new PendingAnswer(state, text, CanOverride: state == AnswerState.Incorrect);
+    }
+
+    /// <summary>
+    /// Submits a coding exercise after the front end has run it. <paramref name="passed"/>: every test passed
+    /// (false for "give up"). The timer covers every attempt, so time spent on failed runs counts.
+    /// </summary>
+    public PendingAnswer SubmitExercise(string code, bool passed)
+    {
+        var item = RequireUnanswered();
+        if (!item.Question.IsExercise) throw new InvalidOperationException("Current question is not a coding exercise.");
+
+        _stopwatch.Stop();
+        return Pending = new PendingAnswer(passed ? AnswerState.Correct : AnswerState.Incorrect, code, CanOverride: false);
     }
 
     /// <summary>Records the final outcome for the current question and returns the updated card.</summary>

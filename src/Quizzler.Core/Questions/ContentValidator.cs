@@ -73,13 +73,26 @@ public static partial class ContentValidator
                     Issue("'planTable' is only for \"expect\": \"table-access\" questions.");
                 }
             }
-            else if (q.Setup is not null || q.Expect is not null || q.PlanTable is not null)
+            else if (q.Expect is not null || q.PlanTable is not null)
             {
-                Issue("'setup', 'expect' and 'planTable' are only for predict-result questions.");
+                Issue("'expect' and 'planTable' are only for predict-result questions.");
+            }
+            else if (q.Setup is not null && !(q.IsExercise && q.Language == ExerciseLanguage.Sql))
+            {
+                Issue("'setup' is only for predict-result questions and SQL write-code exercises.");
             }
 
-            if (q.Distractors.Count is < MinDistractors or > MaxDistractors)
-                Issue($"Needs {MinDistractors}-{MaxDistractors} distractors (has {q.Distractors.Count}).");
+            if (q.IsExercise)
+            {
+                ValidateExercise(q, Issue);
+            }
+            else
+            {
+                if (q.Language is not null || q.Starter is not null || q.Tests.Count > 0 || q.Helpers is not null)
+                    Issue("'language', 'starter', 'helpers' and 'tests' are only for write-code exercises.");
+                if (q.Distractors.Count is < MinDistractors or > MaxDistractors)
+                    Issue($"Needs {MinDistractors}-{MaxDistractors} distractors (has {q.Distractors.Count}).");
+            }
 
             if (q.Distractors.Any(string.IsNullOrWhiteSpace) || q.Accepted.Any(string.IsNullOrWhiteSpace))
                 Issue("Distractors and accepted answers must not be blank.");
@@ -105,6 +118,30 @@ public static partial class ContentValidator
         }
 
         return issues;
+    }
+
+    private static void ValidateExercise(Question q, Action<string> issue)
+    {
+        if (q.Distractors.Count > 0) issue("write-code exercises have no distractors (they're never multiple choice).");
+        if (q.Accepted.Count > 0) issue("write-code exercises don't use 'accepted': they're graded by running the code.");
+        if (q.Recall is not null) issue("write-code exercises don't use 'recall'.");
+
+        switch (q.Language)
+        {
+            case null:
+                issue("write-code exercises require 'language': \"csharp\" or \"sql\".");
+                break;
+            case ExerciseLanguage.CSharp:
+                if (q.Tests.Count == 0) issue("C# exercises need at least one entry in 'tests'.");
+                foreach (var t in q.Tests.Where(t => string.IsNullOrWhiteSpace(t.Call) || string.IsNullOrWhiteSpace(t.Expect)))
+                    issue($"Every test needs 'call' and 'expect' (bad test: '{Shorten(t.Call)}').");
+                break;
+            case ExerciseLanguage.Sql:
+                if (string.IsNullOrWhiteSpace(q.Setup)) issue("SQL exercises require 'setup' (SQL that creates the tables).");
+                if (q.Tests.Count > 0) issue("SQL exercises don't use 'tests': the answer query's result is the test.");
+                if (q.Helpers is not null) issue("SQL exercises don't use 'helpers'.");
+                break;
+        }
     }
 
     private static string Shorten(string s) => s.Length <= 40 ? s : s[..37] + "...";

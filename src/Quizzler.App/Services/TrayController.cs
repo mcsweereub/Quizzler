@@ -10,6 +10,7 @@ namespace Quizzler.App.Services;
 internal interface ITrayHost
 {
     void ShowQuiz();
+    void ChooseSession();
     void Snooze(TimeSpan? duration); // null = until tomorrow morning
     void ClearSnooze();
     void OpenSettings();
@@ -35,6 +36,7 @@ internal sealed class TrayController : IDisposable
 
         var menu = new ContextMenu();
         menu.Items.Add(_startItem);
+        menu.Items.Add(Item("Choose what to study…", (_, _) => host.ChooseSession()));
         menu.Items.Add(new Separator());
         menu.Items.Add(_snoozeHourItem);
         menu.Items.Add(_snoozeTomorrowItem);

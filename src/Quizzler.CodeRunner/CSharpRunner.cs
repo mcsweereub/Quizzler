@@ -25,7 +25,7 @@ public static class CSharpRunner
         "System.Text", "System.Threading", "System.Threading.Tasks",
     ];
 
-    private static readonly CSharpParseOptions ParseOptions = new(LanguageVersion.Latest);
+    internal static readonly CSharpParseOptions ParseOptions = new(LanguageVersion.Latest);
 
     private static readonly SyntaxTree GlobalUsingsTree = CSharpSyntaxTree.ParseText(
         string.Concat(ImplicitUsings.Select(u => $"global using {u};\n")), ParseOptions);
@@ -96,25 +96,27 @@ public static class CSharpRunner
 
     private static (Assembly? Assembly, IReadOnlyList<string> Errors) Compile(string code)
     {
+        var (image, errors) = Emit([CSharpSyntaxTree.ParseText(code, ParseOptions)]);
+        if (image is null)
+            return (null, errors.Select(d => d.ToString()).ToList());
+
+        var context = new AssemblyLoadContext(name: null, isCollectible: true);
+        return (context.LoadFromStream(new MemoryStream(image)), []);
+    }
+
+    /// <summary>Compiles the trees (plus the implicit global usings) into an executable image, or returns the errors.</summary>
+    internal static (byte[]? Image, IReadOnlyList<Diagnostic> Errors) Emit(IEnumerable<SyntaxTree> trees)
+    {
         // Deriving from one shared compilation lets Roslyn reuse its bound references between snippets.
         var compilation = BaseCompilation.Value
             .WithAssemblyName($"Snippet_{Guid.NewGuid():N}")
-            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(code, ParseOptions));
+            .AddSyntaxTrees(trees);
 
         using var ms = new MemoryStream();
         var emit = compilation.Emit(ms);
         if (!emit.Success)
-        {
-            var errors = emit.Diagnostics
-                .Where(d => d.Severity == DiagnosticSeverity.Error)
-                .Select(d => d.ToString())
-                .ToList();
-            return (null, errors);
-        }
-
-        ms.Position = 0;
-        var context = new AssemblyLoadContext(name: null, isCollectible: true);
-        return (context.LoadFromStream(ms), []);
+            return (null, emit.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList());
+        return (ms.ToArray(), []);
     }
 
     private static void Invoke(Assembly assembly)

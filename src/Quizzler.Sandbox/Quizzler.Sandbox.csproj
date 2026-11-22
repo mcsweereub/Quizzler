@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Runs one compiled C# exercise in its own process (see Program.cs). No dependencies, so it starts fast.
+    Referenced by Quizzler.CodeRunner, which copies it next to whichever app uses the runner.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Quizzler.Sandbox</RootNamespace>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+</Project>

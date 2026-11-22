@@ -9,7 +9,7 @@ It sits next to the clock, shows how many questions are due, and reminds you whe
   6 days, then growing). Questions you miss come back in 10 minutes.
 - **Multiple choice first, then typed.** A new question is multiple choice. Once you get it right, next time
   you have to type the answer. Get it wrong and it drops back to multiple choice.
-- **Four question types:**
+- **Five question types:**
   - *Concept*: short factual answers (`sealed`, `O(log n)`, `Liskov Substitution Principle`).
   - *Predict the output*: read a C# snippet and say what it prints.
   - *Pick the code*: choose the snippet that correctly does something.
@@ -17,8 +17,18 @@ It sits next to the clock, shows how many questions are due, and reminds you whe
     answering you see the real result, with the rows that affected it highlighted and the rest dimmed.
     Index questions ask how the database will read a table (full scan, index seek, covering index...) and
     show the real query plan afterwards.
-- **Every answer key is checked by running it.** C# snippets are compiled and run with Roslyn, and SQL queries
-  run in an in-memory SQLite database, during tests, so a wrong answer key fails the build.
+  - *Coding exercises*: LeetCode-style problems in C# (Two Sum, merge intervals, number of islands...) and SQL
+    (second-highest salary, latest order per customer...). Write the code in an editor and run the tests as often
+    as you like; passing first time counts more than passing after failed runs. Your code runs in a separate
+    process, so an endless loop or a stack overflow just fails the test.
+- **Choose what to study.** Tray menu → *Choose what to study…*: only multiple choice, only typed, only coding
+  exercises, only SQL, or any mix of question types. Questions you leave out stay due for later.
+- **Ask Claude what you got wrong.** After a wrong answer, one click (or `X`) sends the question, the right answer
+  and your answer (or your code and failing tests) to Claude, which explains the specific misconception. Optional:
+  needs an Anthropic API key (Settings → Claude, or `ANTHROPIC_API_KEY`), and costs a cent or two per explanation.
+- **Every answer key is checked by running it.** C# snippets are compiled and run with Roslyn, SQL queries
+  run in an in-memory SQLite database, and every coding exercise's reference solution must pass its own tests,
+  so a wrong answer key fails the build.
 - **New-per-day cap** (default 10) so a big batch of new questions doesn't swamp you.
 
 ## Requirements
@@ -43,7 +53,7 @@ To remove it: `tools/uninstall.ps1` (add `-RemoveData` to delete your progress t
 ## Using the app
 
 - **Tray icon**: the red badge shows how many questions are due. Left-click to start a quiz; right-click
-  for Snooze (1 hour / until tomorrow), Stats, Settings and Exit.
+  for Choose what to study, Snooze (1 hour / until tomorrow), Stats, Settings and Exit.
 - **Stats**: streak, a calendar of days studied, reviews coming up over the next two weeks, how well you
   remember after each gap (1 day, a week, a month...), progress and accuracy per topic, and the questions you
   keep missing.
@@ -62,8 +72,10 @@ To remove it: `tools/uninstall.ps1` (add `-RemoveData` to delete your progress t
 | `E` | Too easy (pushes it further out) |
 | `O` | Override: my typed answer was actually right |
 | `Y` / `N` | Self-graded questions: I got it / I didn't |
+| `X` | Ask Claude what I got wrong |
 | `F` | Flag the question as wrong or unclear |
-| `Esc` | Close |
+| `Ctrl+Enter` | Coding exercises: run the tests |
+| `Esc` | Close (ignored while you're writing code, so a stray press can't lose it) |
 
 ## Command line
 
@@ -71,6 +83,8 @@ The installer also puts a `quizzler` CLI in `%LOCALAPPDATA%\Programs\Quizzler\cl
 
 ```powershell
 dotnet run --project src/Quizzler.Cli -- quiz       # study in the terminal
+dotnet run --project src/Quizzler.Cli -- quiz --types csharp-exercise,sql-exercise   # only coding exercises
+dotnet run --project src/Quizzler.Cli -- quiz --style mc                              # only multiple choice
 dotnet run --project src/Quizzler.Cli -- stats      # streak, accuracy, forecast, topics, questions you keep missing
 dotnet run --project src/Quizzler.Cli -- validate   # check the question bank and run every snippet
 dotnet run --project src/Quizzler.Cli -- import     # import content/ into your database
@@ -119,7 +133,9 @@ Never change an existing question's `id`: your progress is stored against it.
 
 ```
 src/Quizzler.Core        Models, grading, SM-2 scheduler, session planning, notification policy
-src/Quizzler.CodeRunner  Roslyn snippet runner + answer-key verifier
+src/Quizzler.CodeRunner  Roslyn snippet runner, coding-exercise runner, answer-key verifier
+src/Quizzler.Sandbox     Runs exercise code in its own process
+src/Quizzler.Ai          "Ask Claude what I got wrong" (Anthropic C# SDK)
 src/Quizzler.Data        SQLite store and migrations
 src/Quizzler.Cli         The quizzler command
 src/Quizzler.App         WPF tray app (net10.0-windows)
@@ -136,6 +152,6 @@ dotnet test
 
 ## Roadmap
 
-- More questions across C#, .NET, design, data structures & algorithms, SQL and Git.
-- A stats view in the app.
-- LeetCode-style exercises: write code, have it run against expected output.
+- More questions and coding exercises (questions are cheap to add and the tests check every one).
+- Hidden test cases for exercises, and timing/complexity checks.
+- Use the review history for a smarter scheduler (FSRS).

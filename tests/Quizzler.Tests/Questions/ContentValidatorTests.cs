@@ -26,6 +26,39 @@ public class ContentValidatorTests
         Assert.Empty(Validate(Valid()));
     }
 
+    private static Question Exercise() => Valid("cs-exercises-0001") with
+    {
+        Type = QuestionType.WriteCode, Language = ExerciseLanguage.CSharp, Distractors = [],
+        Answer = "int Add(int a, int b) => a + b;", Tests = [new CodeTest("Add(1, 2)", "3")],
+    };
+
+    [Fact]
+    public void Valid_exercise_needs_no_distractors()
+    {
+        Assert.Empty(Validate(Exercise()));
+    }
+
+    [Fact]
+    public void Exercise_rules_are_enforced()
+    {
+        Assert.Contains(Validate(Exercise() with { Language = null }), i => i.Message.Contains("'language'"));
+        Assert.Contains(Validate(Exercise() with { Tests = [] }), i => i.Message.Contains("at least one"));
+        Assert.Contains(Validate(Exercise() with { Distractors = ["x", "y"] }), i => i.Message.Contains("no distractors"));
+        Assert.Contains(Validate(Exercise() with { Language = ExerciseLanguage.Sql }), i => i.Message.Contains("require 'setup'"));
+        Assert.Contains(Validate(Valid() with { Starter = "x" }), i => i.Message.Contains("only for write-code"));
+    }
+
+    [Fact]
+    public async Task Verifier_rejects_a_reference_solution_that_fails_its_tests()
+    {
+        var broken = Exercise() with { Answer = "int Add(int a, int b) => a - b;" };
+        var trivial = Exercise() with { Starter = "int Add(int a, int b) => a + b;" };
+
+        Assert.Contains(await Quizzler.CodeRunner.ContentVerifier.VerifyExerciseAsync(broken), m => m.Contains("doesn't pass"));
+        Assert.Contains(await Quizzler.CodeRunner.ContentVerifier.VerifyExerciseAsync(trivial), m => m.Contains("starter code already passes"));
+        Assert.Empty(await Quizzler.CodeRunner.ContentVerifier.VerifyExerciseAsync(Exercise()));
+    }
+
     [Fact]
     public void Duplicate_ids_are_reported()
     {

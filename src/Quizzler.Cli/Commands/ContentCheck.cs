@@ -27,7 +27,8 @@ internal static class ContentCheck
             $"([grey]{byType.GetValueOrDefault(QuestionType.Concept)} concept, " +
             $"{byType.GetValueOrDefault(QuestionType.PredictOutput)} predict-output, " +
             $"{byType.GetValueOrDefault(QuestionType.PickTheCode)} pick-the-code, " +
-            $"{byType.GetValueOrDefault(QuestionType.PredictResult)} predict-result[/])");
+            $"{byType.GetValueOrDefault(QuestionType.PredictResult)} predict-result, " +
+            $"{byType.GetValueOrDefault(QuestionType.WriteCode)} write-code[/])");
 
         var toRun = load.Questions.Count(q => ContentVerifier.IsRunnable(q.Question));
         if (!settings.NoRun && toRun > 0)
@@ -36,7 +37,7 @@ internal static class ContentCheck
                 .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new SpinnerColumn())
                 .StartAsync(async ctx =>
                 {
-                    var task = ctx.AddTask($"Running {toRun} snippets", maxValue: toRun);
+                    var task = ctx.AddTask($"Running {toRun} snippets, queries and exercise solutions", maxValue: toRun);
                     var progress = new Progress<LoadedQuestion>(_ => task.Increment(1));
                     var result = await ContentVerifier.VerifyAsync(load.Questions, progress, cancellationToken);
                     task.Value = toRun;

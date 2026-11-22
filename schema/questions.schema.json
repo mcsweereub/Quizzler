@@ -16,7 +16,7 @@
     "question": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "type", "topic", "difficulty", "prompt", "answer", "distractors", "explanation"],
+      "required": ["id", "type", "topic", "difficulty", "prompt", "answer", "explanation"],
       "properties": {
         "id": {
           "type": "string",
@@ -24,7 +24,33 @@
           "description": "Stable unique id, e.g. cs-async-0007. Never change once published."
         },
         "type": {
-          "enum": ["concept", "predict-output", "pick-the-code", "predict-result"]
+          "enum": ["concept", "predict-output", "pick-the-code", "predict-result", "write-code"]
+        },
+        "language": {
+          "enum": ["csharp", "sql"],
+          "description": "write-code only: the language the user writes in."
+        },
+        "starter": {
+          "type": "string",
+          "description": "write-code only: what the editor starts with, usually the method signature with an empty body."
+        },
+        "helpers": {
+          "type": "string",
+          "description": "write-code (C#) only: types/methods available to both the user's code and the tests (e.g. ListNode and FromArray/ToArray). Shown read-only."
+        },
+        "tests": {
+          "type": "array",
+          "description": "write-code (C#) only: each test calls the user's code. Values compare by their printed form, so collections compare by content.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["call", "expect"],
+            "properties": {
+              "call": { "type": "string", "description": "C# expression evaluated inside the Solution class, e.g. TwoSum(new[] { 2, 7 }, 9). Or statements ending in return." },
+              "expect": { "type": "string", "description": "C# expression for the expected value, e.g. new[] { 0, 1 }." },
+              "unordered": { "type": "boolean", "description": "The result is a collection whose order doesn't matter." }
+            }
+          }
         },
         "topic": {
           "type": "string",
@@ -44,7 +70,7 @@
         },
         "setup": {
           "type": "string",
-          "description": "predict-result only: SQL (SQLite) that creates and fills the tables, shown to the user as grids."
+          "description": "predict-result and SQL write-code: SQL (SQLite) that creates and fills the tables, shown to the user as grids."
         },
         "expect": {
           "enum": ["rows", "row-count", "table-access"],
@@ -54,7 +80,7 @@
           "type": "string",
           "description": "table-access only: the table the question is about, as named in the plan (its alias if aliased). Needed when the query reads several tables."
         },
-        "answer": { "type": "string", "minLength": 1 },
+        "answer": { "type": "string", "minLength": 1, "description": "The correct answer. write-code: the reference solution (C# code, or the SQL query whose result the user must match)." },
         "accepted": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
@@ -81,6 +107,19 @@
         {
           "if": { "properties": { "type": { "const": "predict-result" } } },
           "then": { "required": ["code", "setup"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "write-code" } } },
+          "then": { "required": ["language"] },
+          "else": { "required": ["distractors"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "write-code" }, "language": { "const": "csharp" } } },
+          "then": { "required": ["tests"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "write-code" }, "language": { "const": "sql" } } },
+          "then": { "required": ["setup"] }
         }
       ]
     }

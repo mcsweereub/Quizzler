@@ -1,0 +1,157 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "dotnet-efcore-0001",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["n-plus-one", "performance"],
+      "prompt": "What is the \"N+1 queries\" problem?",
+      "answer": "One query loads a list, then one more query runs for each item to load its related data (e.g. lazy loading in a loop)",
+      "recall": "self",
+      "distractors": [
+        "A query that returns one more row than expected",
+        "Running N queries in parallel, plus one to combine their results",
+        "An index with one more column than the query needs"
+      ],
+      "explanation": "Fifty orders become 51 round trips. Load the related data in the same query with Include, or project just what you need with Select."
+    },
+    {
+      "id": "dotnet-efcore-0002",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["loading", "include"],
+      "prompt": "Which EF Core method loads related entities as part of the same query, e.g. orders together with their customer?",
+      "answer": "Include",
+      "accepted": [".Include"],
+      "distractors": ["Join", "Load", "AsSplitQuery"],
+      "explanation": "`context.Orders.Include(o => o.Customer)` is eager loading. `Entry(x).Reference(...).Load()` is explicit loading, a separate query later."
+    },
+    {
+      "id": "dotnet-efcore-0003",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["change-tracking", "performance"],
+      "prompt": "Which method do you add to a read-only EF Core query so the context doesn't track the entities it returns?",
+      "answer": "AsNoTracking",
+      "distractors": ["AsReadOnly", "Detach", "AsEnumerable"],
+      "explanation": "Tracking keeps a snapshot of every entity for change detection. For data you won't save, AsNoTracking is faster and uses less memory."
+    },
+    {
+      "id": "dotnet-efcore-0004",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["dbcontext", "dependency-injection"],
+      "prompt": "Which DI lifetime does `AddDbContext` register the DbContext with?",
+      "answer": "Scoped",
+      "distractors": ["Singleton", "Transient"],
+      "explanation": "One DbContext per request: it's a short-lived unit of work and not thread-safe, so it must not be a singleton."
+    },
+    {
+      "id": "dotnet-efcore-0005",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["dbcontext", "threading"],
+      "prompt": "Can two threads safely use the same DbContext instance at the same time?",
+      "answer": "No",
+      "accepted": ["No, it isn't thread-safe", "No, it's not thread-safe"],
+      "distractors": ["Yes", "Yes, as long as they only read"],
+      "explanation": "Even reads mutate the change tracker. EF Core throws when it detects a second operation starting on the same context; give each concurrent operation its own context (IDbContextFactory)."
+    },
+    {
+      "id": "dotnet-efcore-0006",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 3,
+      "tags": ["iqueryable", "client-evaluation"],
+      "prompt": "Why is `context.Users.AsEnumerable().Where(u => u.Age > 30)` much slower than `context.Users.Where(u => u.Age > 30)` on a big table?",
+      "answer": "AsEnumerable switches to LINQ to Objects, so every user is loaded and filtered in memory instead of in SQL",
+      "recall": "self",
+      "distractors": [
+        "AsEnumerable caches the whole table, so it's actually faster after the first call",
+        "It isn't: both translate to the same SQL",
+        "AsEnumerable runs a separate query for each user"
+      ],
+      "explanation": "Operators after AsEnumerable bind to Enumerable, not Queryable, so EF Core can't see them. The SQL becomes SELECT * FROM Users and the WHERE happens in your process."
+    },
+    {
+      "id": "dotnet-efcore-0007",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 3,
+      "tags": ["iqueryable", "expression-trees"],
+      "prompt": "Which interface does `context.Users.Where(...)` return, carrying an expression tree that EF Core translates into SQL?",
+      "answer": "IQueryable<T>",
+      "accepted": ["IQueryable", "IQueryable<User>"],
+      "distractors": ["IEnumerable<T>", "IList<T>", "IAsyncEnumerable<T>"],
+      "explanation": "Queryable.Where takes an Expression<Func<T, bool>>, data describing the lambda, which the provider turns into SQL. Enumerable.Where takes a compiled Func and runs it in memory."
+    },
+    {
+      "id": "dotnet-efcore-0008",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 3,
+      "tags": ["savechanges", "transactions"],
+      "prompt": "By default, how does `SaveChanges()` run all the pending inserts, updates and deletes?",
+      "answer": "Together in a single transaction: all succeed or none do",
+      "recall": "self",
+      "distractors": [
+        "Each statement in its own transaction",
+        "Without any transaction",
+        "Only the first change; call it again for the rest"
+      ],
+      "explanation": "If no transaction is already open, SaveChanges starts one around the whole batch and rolls it back on failure. You only need an explicit transaction to span several SaveChanges calls."
+    },
+    {
+      "id": "dotnet-efcore-0009",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 2,
+      "tags": ["migrations", "cli"],
+      "prompt": "Which `dotnet ef` command creates a new migration from your model changes?",
+      "answer": "dotnet ef migrations add",
+      "accepted": ["dotnet ef migrations add <Name>", "migrations add", "Add-Migration"],
+      "distractors": ["dotnet ef database update", "dotnet ef migrations script", "dotnet ef dbcontext scaffold"],
+      "explanation": "`migrations add` generates the migration code; `database update` applies pending migrations to the database; `migrations script` produces SQL to run elsewhere."
+    },
+    {
+      "id": "dotnet-efcore-0010",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 3,
+      "tags": ["concurrency", "exceptions"],
+      "prompt": "Which exception does EF Core's `SaveChanges()` throw when an optimistic concurrency check fails because the row changed since it was read?",
+      "answer": "DbUpdateConcurrencyException",
+      "distractors": ["OptimisticConcurrencyException", "TransactionAbortedException", "SqlException"],
+      "explanation": "With a concurrency token ([Timestamp]/rowversion or [ConcurrencyCheck]), the UPDATE includes the original value in its WHERE clause; zero rows affected means someone else changed it. OptimisticConcurrencyException is the old EF6 name."
+    },
+    {
+      "id": "dotnet-efcore-0011",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 4,
+      "tags": ["split-query", "performance"],
+      "prompt": "Which EF Core query method loads each included collection with its own SQL query, avoiding the duplicated rows (\"cartesian explosion\") of one big JOIN?",
+      "answer": "AsSplitQuery",
+      "distractors": ["AsNoTracking", "AsSingleQuery", "IgnoreAutoIncludes"],
+      "explanation": "Including two collections in one query multiplies rows (orders × lines × payments). Split queries fetch each collection separately; the trade-off is more round trips and no single consistent snapshot without a transaction."
+    },
+    {
+      "id": "dotnet-efcore-0012",
+      "type": "concept",
+      "topic": "dotnet/efcore",
+      "difficulty": 3,
+      "tags": ["debugging", "sql"],
+      "prompt": "Which method shows the SQL that an EF Core LINQ query will run, without executing it?",
+      "answer": "ToQueryString",
+      "accepted": ["ToQueryString()", ".ToQueryString()"],
+      "distractors": ["ToString", "ToSql", "Explain"],
+      "explanation": "`query.ToQueryString()` returns the generated SQL (with parameter declarations). For every query the app runs, turn on logging with LogTo or the Microsoft.EntityFrameworkCore.Database.Command category."
+    }
+  ]
+}

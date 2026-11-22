@@ -21,6 +21,9 @@ public partial class SettingsWindow : Window
         };
     }
 
+    /// <summary>PasswordBox.Password can't be bound (by design), so pass it to the view model here.</summary>
+    private void OnApiKeyChanged(object sender, RoutedEventArgs e) => _viewModel.NewApiKey = ApiKeyBox.Password;
+
     /// <summary>Closing with the X behaves like Cancel (reverts a previewed theme).</summary>
     protected override void OnClosing(CancelEventArgs e)
     {

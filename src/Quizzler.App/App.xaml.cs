@@ -2,7 +2,9 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Quizzler.Ai;
 using Quizzler.App.Services;
+using Quizzler.Core.Scheduling;
 using Quizzler.App.ViewModels;
 using Quizzler.App.Views;
 using Quizzler.Core.Study;
@@ -144,18 +146,27 @@ public partial class App : Application, ITrayHost, ISettingsHost
 
     // ------------------------------------------------------------------ ITrayHost
 
-    public void ShowQuiz()
+    public void ShowQuiz() => ShowQuiz(choose: false);
+
+    /// <summary>Opens the quiz window on "choose what to study" (or switches a finished window to it).</summary>
+    public void ChooseSession() => ShowQuiz(choose: true);
+
+    private const string SessionFilterKey = "session_filter";
+
+    private void ShowQuiz(bool choose)
     {
         if (_window is { IsVisible: true } open)
         {
+            var vm = open.ViewModel;
             // A finished window with fresh questions due gets replaced by a new session; otherwise just bring it forward.
-            if (open.ViewModel.IsDone && _service.GetDueSummary().Total > 0)
+            if (vm.IsDone && (choose || _service.GetDueSummary().Total > 0))
             {
                 open.Closed -= OnQuizWindowClosed;
                 open.Close();
             }
             else
             {
+                // Mid-session (or already choosing): just bring it forward rather than interrupt.
                 if (open.WindowState == WindowState.Minimized) open.WindowState = WindowState.Normal;
                 if (_activateWindows) open.Activate();
                 return;
@@ -163,7 +174,20 @@ public partial class App : Application, ITrayHost, ISettingsHost
         }
 
         _notifier?.ClearDueReminder();
-        _window = new QuizWindow(new QuizViewModel(_service, OpenSettings, OpenStats), _activateWindows);
+        var keys = ApiKeys;
+        var options = new QuizOptions
+        {
+            StartWithPicker = choose,
+            // The tray's quick start is always "everything due"; the picker starts from the last choice.
+            Filter = choose ? SessionFilter.Parse(_db.GetSetting(SessionFilterKey)) : SessionFilter.Everything,
+            FilterChosen = f => _db.SetOrDeleteSetting(SessionFilterKey, f.IsEverything ? null : f.Serialize()),
+            OpenSettings = OpenSettings,
+            OpenStats = OpenStats,
+            GetApiKey = keys.GetKey,
+            LoadDraft = id => _db.GetSetting(DraftKey(id)),
+            SaveDraft = (id, code) => _db.SetOrDeleteSetting(DraftKey(id), code),
+        };
+        _window = new QuizWindow(new QuizViewModel(_service, options), _activateWindows);
         _window.Closed += OnQuizWindowClosed;
         _window.Show();
         if (_activateWindows) _window.Activate();
@@ -253,6 +277,10 @@ public partial class App : Application, ITrayHost, ISettingsHost
     }
 
     // ------------------------------------------------------------------ helpers
+
+    public ApiKeyStore ApiKeys => new(_db.GetSetting, _db.SetOrDeleteSetting);
+
+    private static string DraftKey(string questionId) => $"draft:{questionId}";
 
     /// <summary>First launch of an installed copy turns on "Start with Windows"; later launches keep the path current.</summary>
     private void ConfigureStartupOnFirstRun()

@@ -1,0 +1,230 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "dsa-exercises-0001",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["arrays", "hashing"],
+      "prompt": "**Two Sum.** Return the indices of the two numbers in `nums` that add up to `target`, smaller index first. Exactly one answer exists, and you may not use the same element twice. Aim for O(n).",
+      "starter": "public int[] TwoSum(int[] nums, int target)\n{\n    \n}",
+      "tests": [
+        { "call": "TwoSum(new[] { 2, 7, 11, 15 }, 9)", "expect": "new[] { 0, 1 }" },
+        { "call": "TwoSum(new[] { 3, 2, 4 }, 6)", "expect": "new[] { 1, 2 }" },
+        { "call": "TwoSum(new[] { 3, 3 }, 6)", "expect": "new[] { 0, 1 }" },
+        { "call": "TwoSum(new[] { -4, 10, 5, 1 }, 1)", "expect": "new[] { 0, 2 }" }
+      ],
+      "answer": "public int[] TwoSum(int[] nums, int target)\n{\n    var seen = new Dictionary<int, int>(); // value -> index\n    for (int i = 0; i < nums.Length; i++)\n    {\n        if (seen.TryGetValue(target - nums[i], out var j)) return new[] { j, i };\n        seen[nums[i]] = i;\n    }\n    throw new ArgumentException(\"No solution\");\n}",
+      "explanation": "Store each value's index as you go and look up the complement `target - nums[i]` before adding the current value, which is what makes { 3, 3 } work. One pass, O(n) time and space."
+    },
+    {
+      "id": "dsa-exercises-0002",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["stack", "strings"],
+      "prompt": "**Valid parentheses.** Return true if every bracket in `s` (only `()[]{}`) is closed by the same type, in the right order.",
+      "starter": "public bool IsValid(string s)\n{\n    \n}",
+      "tests": [
+        { "call": "IsValid(\"()[]{}\")", "expect": "true" },
+        { "call": "IsValid(\"{[]}\")", "expect": "true" },
+        { "call": "IsValid(\"(]\")", "expect": "false" },
+        { "call": "IsValid(\"([)]\")", "expect": "false" },
+        { "call": "IsValid(\"((\")", "expect": "false" },
+        { "call": "IsValid(\")\")", "expect": "false" },
+        { "call": "IsValid(\"\")", "expect": "true" }
+      ],
+      "answer": "public bool IsValid(string s)\n{\n    var open = new Stack<char>();\n    foreach (var c in s)\n    {\n        if (c is '(' or '[' or '{') { open.Push(c); continue; }\n        var expected = c switch { ')' => '(', ']' => '[', _ => '{' };\n        if (open.Count == 0 || open.Pop() != expected) return false;\n    }\n    return open.Count == 0;\n}",
+      "explanation": "A stack holds the brackets still waiting to be closed; each closer must match the most recent opener. The two edge cases people miss: a closer when the stack is empty, and openers left over at the end."
+    },
+    {
+      "id": "dsa-exercises-0003",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["binary-search", "arrays"],
+      "prompt": "**Binary search.** `nums` is sorted ascending. Return the index of `target`, or -1 if it isn't there. O(log n).",
+      "starter": "public int Search(int[] nums, int target)\n{\n    \n}",
+      "tests": [
+        { "call": "Search(new[] { -1, 0, 3, 5, 9, 12 }, 9)", "expect": "4" },
+        { "call": "Search(new[] { -1, 0, 3, 5, 9, 12 }, 2)", "expect": "-1" },
+        { "call": "Search(new[] { -1, 0, 3, 5, 9, 12 }, -1)", "expect": "0" },
+        { "call": "Search(new[] { -1, 0, 3, 5, 9, 12 }, 12)", "expect": "5" },
+        { "call": "Search(new[] { 5 }, 5)", "expect": "0" },
+        { "call": "Search(new int[0], 1)", "expect": "-1" }
+      ],
+      "answer": "public int Search(int[] nums, int target)\n{\n    int lo = 0, hi = nums.Length - 1;\n    while (lo <= hi)\n    {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] == target) return mid;\n        if (nums[mid] < target) lo = mid + 1;\n        else hi = mid - 1;\n    }\n    return -1;\n}",
+      "explanation": "With an inclusive range [lo, hi] the loop condition is `lo <= hi` (otherwise a one-element range is skipped and the last element is missed), and both moves must step past mid. `lo + (hi - lo) / 2` avoids overflow on huge arrays."
+    },
+    {
+      "id": "dsa-exercises-0004",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["linked-list", "pointers"],
+      "prompt": "**Reverse a linked list.** Reverse the singly linked list starting at `head` and return the new head. Do it in place, in O(1) extra space.",
+      "helpers": "public class ListNode\n{\n    public int val;\n    public ListNode? next;\n    public ListNode(int val, ListNode? next = null) { this.val = val; this.next = next; }\n}\n\n// Used by the tests:\nstatic ListNode? FromArray(int[] values) { ListNode? head = null; for (int i = values.Length - 1; i >= 0; i--) head = new ListNode(values[i], head); return head; }\nstatic int[] ToArray(ListNode? node) { var list = new List<int>(); for (; node != null; node = node.next) list.Add(node.val); return list.ToArray(); }",
+      "starter": "public ListNode? ReverseList(ListNode? head)\n{\n    \n}",
+      "tests": [
+        { "call": "ToArray(ReverseList(FromArray(new[] { 1, 2, 3, 4, 5 })))", "expect": "new[] { 5, 4, 3, 2, 1 }" },
+        { "call": "ToArray(ReverseList(FromArray(new[] { 1, 2 })))", "expect": "new[] { 2, 1 }" },
+        { "call": "ToArray(ReverseList(FromArray(new[] { 7 })))", "expect": "new[] { 7 }" },
+        { "call": "ToArray(ReverseList(null))", "expect": "new int[0]" }
+      ],
+      "answer": "public ListNode? ReverseList(ListNode? head)\n{\n    ListNode? prev = null;\n    while (head != null)\n    {\n        var next = head.next; // remember the rest before overwriting the link\n        head.next = prev;\n        prev = head;\n        head = next;\n    }\n    return prev;\n}",
+      "explanation": "Walk the list keeping three references: the previous node, the current one and the next one. Save `next` before pointing the current node backwards, or you lose the rest of the list. At the end `prev` is the new head."
+    },
+    {
+      "id": "dsa-exercises-0005",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["arrays", "dynamic-programming", "kadane"],
+      "prompt": "**Maximum subarray.** Return the largest sum of any non-empty contiguous run of `nums`. O(n).",
+      "starter": "public int MaxSubArray(int[] nums)\n{\n    \n}",
+      "tests": [
+        { "call": "MaxSubArray(new[] { -2, 1, -3, 4, -1, 2, 1, -5, 4 })", "expect": "6" },
+        { "call": "MaxSubArray(new[] { 1 })", "expect": "1" },
+        { "call": "MaxSubArray(new[] { 5, 4, -1, 7, 8 })", "expect": "23" },
+        { "call": "MaxSubArray(new[] { -3, -1, -2 })", "expect": "-1" }
+      ],
+      "answer": "public int MaxSubArray(int[] nums)\n{\n    int best = nums[0], current = nums[0];\n    for (int i = 1; i < nums.Length; i++)\n    {\n        current = Math.Max(nums[i], current + nums[i]); // extend the run, or start again here\n        best = Math.Max(best, current);\n    }\n    return best;\n}",
+      "explanation": "Kadane's algorithm: the best run ending at i either extends the best run ending at i-1 or starts fresh at i. Starting `best` at 0 instead of nums[0] gets the all-negative case wrong."
+    },
+    {
+      "id": "dsa-exercises-0006",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 3,
+      "tags": ["intervals", "sorting"],
+      "prompt": "**Merge intervals.** Each interval is `[start, end]`. Merge all overlapping intervals (touching ones like [1,4] and [4,5] count as overlapping) and return them sorted by start.",
+      "starter": "public int[][] Merge(int[][] intervals)\n{\n    \n}",
+      "tests": [
+        { "call": "Merge(new[] { new[] { 1, 3 }, new[] { 2, 6 }, new[] { 8, 10 }, new[] { 15, 18 } })", "expect": "new[] { new[] { 1, 6 }, new[] { 8, 10 }, new[] { 15, 18 } }" },
+        { "call": "Merge(new[] { new[] { 1, 4 }, new[] { 4, 5 } })", "expect": "new[] { new[] { 1, 5 } }" },
+        { "call": "Merge(new[] { new[] { 4, 5 }, new[] { 1, 2 } })", "expect": "new[] { new[] { 1, 2 }, new[] { 4, 5 } }" },
+        { "call": "Merge(new[] { new[] { 1, 10 }, new[] { 2, 3 } })", "expect": "new[] { new[] { 1, 10 } }" }
+      ],
+      "answer": "public int[][] Merge(int[][] intervals)\n{\n    var result = new List<int[]>();\n    foreach (var interval in intervals.OrderBy(i => i[0]))\n    {\n        if (result.Count > 0 && interval[0] <= result[^1][1])\n            result[^1][1] = Math.Max(result[^1][1], interval[1]);\n        else\n            result.Add(new[] { interval[0], interval[1] });\n    }\n    return result.ToArray();\n}",
+      "explanation": "Sort by start, then each interval either overlaps the last merged one (extend its end) or starts a new one. Take the max of the ends: [1,10] followed by [2,3] must stay [1,10]."
+    },
+    {
+      "id": "dsa-exercises-0007",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 1,
+      "tags": ["strings", "hashing"],
+      "prompt": "**Valid anagram.** Return true if `t` uses exactly the same letters as `s`, the same number of times each.",
+      "starter": "public bool IsAnagram(string s, string t)\n{\n    \n}",
+      "tests": [
+        { "call": "IsAnagram(\"anagram\", \"nagaram\")", "expect": "true" },
+        { "call": "IsAnagram(\"rat\", \"car\")", "expect": "false" },
+        { "call": "IsAnagram(\"aab\", \"abb\")", "expect": "false" },
+        { "call": "IsAnagram(\"ab\", \"abc\")", "expect": "false" },
+        { "call": "IsAnagram(\"\", \"\")", "expect": "true" }
+      ],
+      "answer": "public bool IsAnagram(string s, string t)\n{\n    if (s.Length != t.Length) return false;\n    var counts = new Dictionary<char, int>();\n    foreach (var c in s) counts[c] = counts.GetValueOrDefault(c) + 1;\n    foreach (var c in t)\n    {\n        if (counts.GetValueOrDefault(c) == 0) return false;\n        counts[c]--;\n    }\n    return true;\n}",
+      "explanation": "Count letters in one string and count them back down with the other: O(n). Checking only that each letter appears (a set) wrongly accepts \"aab\" vs \"abb\". Sorting both strings also works, in O(n log n)."
+    },
+    {
+      "id": "dsa-exercises-0008",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 3,
+      "tags": ["sliding-window", "strings"],
+      "prompt": "**Longest substring without repeating characters.** Return the length of the longest substring of `s` in which no character appears twice. O(n).",
+      "starter": "public int LengthOfLongestSubstring(string s)\n{\n    \n}",
+      "tests": [
+        { "call": "LengthOfLongestSubstring(\"abcabcbb\")", "expect": "3" },
+        { "call": "LengthOfLongestSubstring(\"bbbbb\")", "expect": "1" },
+        { "call": "LengthOfLongestSubstring(\"pwwkew\")", "expect": "3" },
+        { "call": "LengthOfLongestSubstring(\"\")", "expect": "0" },
+        { "call": "LengthOfLongestSubstring(\"dvdf\")", "expect": "3" },
+        { "call": "LengthOfLongestSubstring(\"abba\")", "expect": "2" }
+      ],
+      "answer": "public int LengthOfLongestSubstring(string s)\n{\n    var lastSeen = new Dictionary<char, int>();\n    int start = 0, best = 0;\n    for (int i = 0; i < s.Length; i++)\n    {\n        // Only jump forward: an old occurrence before the window doesn't matter (\"abba\").\n        if (lastSeen.TryGetValue(s[i], out var j) && j >= start) start = j + 1;\n        lastSeen[s[i]] = i;\n        best = Math.Max(best, i - start + 1);\n    }\n    return best;\n}",
+      "explanation": "Keep a window [start, i] with no repeats. When s[i] was last seen inside the window, move start just past it. The classic bug is moving start backwards to an occurrence that's already outside the window, which \"abba\" catches."
+    },
+    {
+      "id": "dsa-exercises-0009",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 2,
+      "tags": ["dynamic-programming", "memoization"],
+      "prompt": "**Climbing stairs.** You can climb 1 or 2 steps at a time. Return how many distinct ways there are to climb `n` steps (1 ≤ n ≤ 45). The last test needs an efficient solution.",
+      "starter": "public int ClimbStairs(int n)\n{\n    \n}",
+      "tests": [
+        { "call": "ClimbStairs(1)", "expect": "1" },
+        { "call": "ClimbStairs(2)", "expect": "2" },
+        { "call": "ClimbStairs(3)", "expect": "3" },
+        { "call": "ClimbStairs(5)", "expect": "8" },
+        { "call": "ClimbStairs(45)", "expect": "1836311903" }
+      ],
+      "answer": "public int ClimbStairs(int n)\n{\n    int a = 1, b = 1; // ways to reach steps i-2 and i-1\n    for (int i = 2; i <= n; i++) (a, b) = (b, a + b);\n    return b;\n}",
+      "explanation": "Ways(n) = Ways(n-1) + Ways(n-2), because the last move was a 1-step or a 2-step: it's Fibonacci. Plain recursion makes billions of calls for n = 45 and times out; keep only the last two values (or memoise)."
+    },
+    {
+      "id": "dsa-exercises-0010",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 3,
+      "tags": ["hashing", "strings", "grouping"],
+      "prompt": "**Group anagrams.** Group the words that are anagrams of each other. Groups and the words inside them can be in any order.",
+      "starter": "public IList<IList<string>> GroupAnagrams(string[] words)\n{\n    \n}",
+      "tests": [
+        { "call": "GroupAnagrams(new[] { \"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\" }).Select(g => g.Order().ToArray())", "expect": "new[] { new[] { \"ate\", \"eat\", \"tea\" }, new[] { \"nat\", \"tan\" }, new[] { \"bat\" } }", "unordered": true },
+        { "call": "GroupAnagrams(new[] { \"\" }).Select(g => g.Order().ToArray())", "expect": "new[] { new[] { \"\" } }", "unordered": true },
+        { "call": "GroupAnagrams(new[] { \"ab\", \"ba\", \"abc\" }).Count", "expect": "2" }
+      ],
+      "answer": "public IList<IList<string>> GroupAnagrams(string[] words)\n{\n    var groups = new Dictionary<string, IList<string>>();\n    foreach (var word in words)\n    {\n        var chars = word.ToCharArray();\n        Array.Sort(chars);\n        var key = new string(chars); // anagrams share the same sorted letters\n        if (!groups.TryGetValue(key, out var group)) groups[key] = group = new List<string>();\n        group.Add(word);\n    }\n    return groups.Values.ToList();\n}",
+      "explanation": "Anagrams have the same letters in sorted order, so use that as a dictionary key. O(n · k log k) for n words of length k; a 26-letter count as the key makes it O(n · k)."
+    },
+    {
+      "id": "dsa-exercises-0011",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 3,
+      "tags": ["hashing", "heap", "bucket-sort"],
+      "prompt": "**Top K frequent elements.** Return the `k` most frequent numbers in `nums`, in any order. The answer is unique.",
+      "starter": "public int[] TopKFrequent(int[] nums, int k)\n{\n    \n}",
+      "tests": [
+        { "call": "TopKFrequent(new[] { 1, 1, 1, 2, 2, 3 }, 2)", "expect": "new[] { 1, 2 }", "unordered": true },
+        { "call": "TopKFrequent(new[] { 1 }, 1)", "expect": "new[] { 1 }" },
+        { "call": "TopKFrequent(new[] { 4, 4, 5, 5, 5, 6 }, 1)", "expect": "new[] { 5 }" },
+        { "call": "TopKFrequent(new[] { 3, 0, 1, 0, 3, 3, 1, 1, 1 }, 2)", "expect": "new[] { 1, 3 }", "unordered": true }
+      ],
+      "answer": "public int[] TopKFrequent(int[] nums, int k)\n{\n    var counts = new Dictionary<int, int>();\n    foreach (var n in nums) counts[n] = counts.GetValueOrDefault(n) + 1;\n\n    // Min-heap of size k, keyed by count: the least frequent of the current top k is on top.\n    var heap = new PriorityQueue<int, int>();\n    foreach (var (value, count) in counts)\n    {\n        heap.Enqueue(value, count);\n        if (heap.Count > k) heap.Dequeue();\n    }\n    var result = new int[heap.Count];\n    for (int i = 0; i < result.Length; i++) result[i] = heap.Dequeue();\n    return result;\n}",
+      "explanation": "Count with a dictionary, then keep the k largest counts in a size-k min-heap: O(n log k). Sorting all counts is O(n log n) and also passes; bucket sort by count gets O(n)."
+    },
+    {
+      "id": "dsa-exercises-0012",
+      "type": "write-code",
+      "language": "csharp",
+      "topic": "dsa/exercises",
+      "difficulty": 4,
+      "tags": ["graphs", "grid", "dfs", "bfs"],
+      "prompt": "**Number of islands.** `grid` is made of '1' (land) and '0' (water). An island is land connected up, down, left or right (not diagonally). Return how many islands there are.",
+      "starter": "public int NumIslands(char[][] grid)\n{\n    \n}",
+      "tests": [
+        { "call": "NumIslands(new[] { \"11110\".ToCharArray(), \"11010\".ToCharArray(), \"11000\".ToCharArray(), \"00000\".ToCharArray() })", "expect": "1" },
+        { "call": "NumIslands(new[] { \"11000\".ToCharArray(), \"11000\".ToCharArray(), \"00100\".ToCharArray(), \"00011\".ToCharArray() })", "expect": "3" },
+        { "call": "NumIslands(new[] { \"101\".ToCharArray(), \"010\".ToCharArray(), \"101\".ToCharArray() })", "expect": "5" },
+        { "call": "NumIslands(new[] { \"0\".ToCharArray() })", "expect": "0" }
+      ],
+      "answer": "public int NumIslands(char[][] grid)\n{\n    int islands = 0;\n    for (int r = 0; r < grid.Length; r++)\n        for (int c = 0; c < grid[r].Length; c++)\n            if (grid[r][c] == '1') { islands++; Sink(grid, r, c); }\n    return islands;\n}\n\nvoid Sink(char[][] grid, int r, int c)\n{\n    var stack = new Stack<(int, int)>();\n    stack.Push((r, c));\n    while (stack.Count > 0)\n    {\n        var (y, x) = stack.Pop();\n        if (y < 0 || x < 0 || y >= grid.Length || x >= grid[y].Length || grid[y][x] != '1') continue;\n        grid[y][x] = '0'; // mark visited\n        stack.Push((y + 1, x)); stack.Push((y - 1, x)); stack.Push((y, x + 1)); stack.Push((y, x - 1));\n    }\n}",
+      "explanation": "Scan the grid; each unvisited '1' starts a new island, and a flood fill (DFS or BFS) marks all of its land as visited. O(rows × cols). The diagonal test checks that only four directions connect."
+    }
+  ]
+}

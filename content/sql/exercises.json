@@ -1,0 +1,113 @@
+{
+  "$schema": "../../schema/questions.schema.json",
+  "questions": [
+    {
+      "id": "sql-exercises-0001",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 1,
+      "tags": ["where", "order-by"],
+      "prompt": "Return the **name** of every customer in London, in alphabetical order.",
+      "setup": "CREATE TABLE Customers (Id INTEGER PRIMARY KEY, Name TEXT, City TEXT);\nINSERT INTO Customers VALUES (1, 'Mia', 'London'), (2, 'Ben', 'Paris'), (3, 'Ada', 'London'), (4, 'Zoe', 'london'), (5, 'Cal', NULL);",
+      "answer": "SELECT Name FROM Customers WHERE City = 'London' ORDER BY Name",
+      "explanation": "Filter with WHERE, sort with ORDER BY. In SQLite `=` is case-sensitive for text, so 'london' (Zoe) doesn't match; SQL Server's default collation would treat them as equal."
+    },
+    {
+      "id": "sql-exercises-0002",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 2,
+      "tags": ["left-join", "count", "group-by"],
+      "prompt": "Return each customer's **name** and **number of orders**, including customers with no orders (count 0). Order by name.",
+      "setup": "CREATE TABLE Customers (Id INTEGER PRIMARY KEY, Name TEXT);\nINSERT INTO Customers VALUES (1, 'Ada'), (2, 'Ben'), (3, 'Cy');\nCREATE TABLE Orders (Id INTEGER PRIMARY KEY, CustomerId INTEGER, Total REAL);\nINSERT INTO Orders VALUES (1, 1, 20), (2, 1, 35), (3, 3, 12);",
+      "answer": "SELECT c.Name, COUNT(o.Id) AS Orders\nFROM Customers c\nLEFT JOIN Orders o ON o.CustomerId = c.Id\nGROUP BY c.Id, c.Name\nORDER BY c.Name",
+      "explanation": "LEFT JOIN keeps Ben even though he has no orders. Count a column from the right table, `COUNT(o.Id)`: it skips the NULL that the join produces, whereas `COUNT(*)` counts Ben's single NULL row as 1."
+    },
+    {
+      "id": "sql-exercises-0003",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 2,
+      "tags": ["not-exists", "not-in", "nulls"],
+      "prompt": "Return the **name** of every customer who has never placed an order, ordered by name. (Look closely at the Orders data.)",
+      "setup": "CREATE TABLE Customers (Id INTEGER PRIMARY KEY, Name TEXT);\nINSERT INTO Customers VALUES (1, 'Ada'), (2, 'Ben'), (3, 'Cy'), (4, 'Di');\nCREATE TABLE Orders (Id INTEGER PRIMARY KEY, CustomerId INTEGER);\nINSERT INTO Orders VALUES (1, 1), (2, 3), (3, NULL);",
+      "answer": "SELECT c.Name\nFROM Customers c\nWHERE NOT EXISTS (SELECT 1 FROM Orders o WHERE o.CustomerId = c.Id)\nORDER BY c.Name",
+      "explanation": "Order 3 has a NULL CustomerId, so `Id NOT IN (SELECT CustomerId FROM Orders)` returns nothing: `2 <> NULL` is unknown, never true. NOT EXISTS (or a LEFT JOIN where o.Id IS NULL) isn't affected by NULLs."
+    },
+    {
+      "id": "sql-exercises-0004",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 3,
+      "tags": ["subqueries", "distinct"],
+      "prompt": "Return the **second-highest distinct salary** as a single value.",
+      "setup": "CREATE TABLE Employees (Id INTEGER PRIMARY KEY, Name TEXT, Salary INTEGER);\nINSERT INTO Employees VALUES (1, 'Ada', 100), (2, 'Ben', 100), (3, 'Cy', 90), (4, 'Di', 80);",
+      "answer": "SELECT MAX(Salary) FROM Employees WHERE Salary < (SELECT MAX(Salary) FROM Employees)",
+      "explanation": "Two people earn the top salary, so `ORDER BY Salary DESC LIMIT 1 OFFSET 1` returns 100 again. Take the highest salary below the maximum, or `SELECT DISTINCT Salary ... LIMIT 1 OFFSET 1`."
+    },
+    {
+      "id": "sql-exercises-0005",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 3,
+      "tags": ["self-join", "left-join"],
+      "prompt": "Return each employee's **name** and their **manager's name** (NULL for someone with no manager), ordered by employee name.",
+      "setup": "CREATE TABLE Employees (Id INTEGER PRIMARY KEY, Name TEXT, ManagerId INTEGER);\nINSERT INTO Employees VALUES (1, 'Ada', NULL), (2, 'Ben', 1), (3, 'Cy', 1), (4, 'Di', 2);",
+      "answer": "SELECT e.Name, m.Name AS Manager\nFROM Employees e\nLEFT JOIN Employees m ON m.Id = e.ManagerId\nORDER BY e.Name",
+      "explanation": "Join the table to itself with two aliases: `e` for the employee and `m` for the manager. It must be a LEFT JOIN, or Ada (no manager) disappears."
+    },
+    {
+      "id": "sql-exercises-0006",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 2,
+      "tags": ["group-by", "having", "aggregates"],
+      "prompt": "Return the **name** and **total order value** of customers whose orders add up to more than 100, highest total first.",
+      "setup": "CREATE TABLE Customers (Id INTEGER PRIMARY KEY, Name TEXT);\nINSERT INTO Customers VALUES (1, 'Ada'), (2, 'Ben'), (3, 'Cy');\nCREATE TABLE Orders (Id INTEGER PRIMARY KEY, CustomerId INTEGER, Total INTEGER);\nINSERT INTO Orders VALUES (1, 1, 60), (2, 1, 70), (3, 2, 90), (4, 3, 150), (5, 2, 10);",
+      "answer": "SELECT c.Name, SUM(o.Total) AS Total\nFROM Customers c\nJOIN Orders o ON o.CustomerId = c.Id\nGROUP BY c.Id, c.Name\nHAVING SUM(o.Total) > 100\nORDER BY Total DESC",
+      "explanation": "WHERE runs before grouping, so it can't see SUM; filter groups with HAVING. Ben's orders add up to exactly 100, which isn't more than 100."
+    },
+    {
+      "id": "sql-exercises-0007",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 4,
+      "tags": ["window-functions", "greatest-n-per-group"],
+      "prompt": "For each customer who has orders, return their **name**, and the **date** and **total** of their most recent order. Order by name.",
+      "setup": "CREATE TABLE Customers (Id INTEGER PRIMARY KEY, Name TEXT);\nINSERT INTO Customers VALUES (1, 'Ada'), (2, 'Ben'), (3, 'Cy');\nCREATE TABLE Orders (Id INTEGER PRIMARY KEY, CustomerId INTEGER, OrderDate TEXT, Total INTEGER);\nINSERT INTO Orders VALUES (1, 1, '2026-01-05', 20), (2, 1, '2026-03-01', 45), (3, 2, '2026-02-10', 30), (4, 1, '2026-02-01', 99), (5, 2, '2026-01-20', 70);",
+      "answer": "SELECT Name, OrderDate, Total\nFROM (\n    SELECT c.Name, o.OrderDate, o.Total,\n           ROW_NUMBER() OVER (PARTITION BY c.Id ORDER BY o.OrderDate DESC) AS rn\n    FROM Customers c\n    JOIN Orders o ON o.CustomerId = c.Id\n) AS ranked\nWHERE rn = 1\nORDER BY Name",
+      "explanation": "The classic greatest-n-per-group trap is `SELECT Name, MAX(OrderDate), Total ... GROUP BY Name`: Total isn't tied to the row with the max date (most databases reject it outright). Number each customer's orders newest first with ROW_NUMBER and keep row 1."
+    },
+    {
+      "id": "sql-exercises-0008",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 3,
+      "tags": ["window-functions", "running-total"],
+      "prompt": "Return every sale's **date**, **amount** and the **running total** of amounts up to and including that date, in date order.",
+      "setup": "CREATE TABLE Sales (Id INTEGER PRIMARY KEY, SaleDate TEXT, Amount INTEGER);\nINSERT INTO Sales VALUES (1, '2026-01-03', 50), (2, '2026-01-01', 20), (3, '2026-01-02', 30), (4, '2026-01-05', 10);",
+      "answer": "SELECT SaleDate, Amount, SUM(Amount) OVER (ORDER BY SaleDate) AS RunningTotal\nFROM Sales\nORDER BY SaleDate",
+      "explanation": "A window SUM with ORDER BY adds up every row from the start to the current one. The rows are inserted out of date order, so Id order would give the wrong running totals; the window's ORDER BY decides."
+    },
+    {
+      "id": "sql-exercises-0009",
+      "type": "write-code",
+      "language": "sql",
+      "topic": "sql/exercises",
+      "difficulty": 2,
+      "tags": ["group-by", "having", "count"],
+      "prompt": "Return the **department** names that have more than two employees, with their **headcount**, ordered by department.",
+      "setup": "CREATE TABLE Employees (Id INTEGER PRIMARY KEY, Name TEXT, Department TEXT);\nINSERT INTO Employees VALUES (1, 'Ada', 'Eng'), (2, 'Ben', 'Eng'), (3, 'Cy', 'Sales'), (4, 'Di', 'Eng'), (5, 'Ed', 'Sales'), (6, 'Flo', 'Ops'), (7, 'Gus', 'Sales');",
+      "answer": "SELECT Department, COUNT(*) AS Headcount\nFROM Employees\nGROUP BY Department\nHAVING COUNT(*) > 2\nORDER BY Department",
+      "explanation": "Group by department, count each group, and keep groups over two with HAVING. Ops has one person, so it drops out."
+    }
+  ]
+}
